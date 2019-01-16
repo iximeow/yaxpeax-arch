@@ -1,0 +1,11 @@
+[package]
+
+name = "yaxpeax-arch"
+version = "0.0.1"
+authors = [ "iximeow <me@iximeow.net>" ]
+license = "0BSD"
+repository = "yaxpeax-arch"
+description = "fundamental traits to describe an architecture in the yaxpeax project"
+
+[dependencies]
+"num-traits" = "0.2"
