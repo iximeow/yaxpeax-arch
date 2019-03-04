@@ -2,7 +2,7 @@ extern crate num_traits;
 
 use std::fmt::{Debug, Display};
 
-use std::ops::{Add, Sub};
+use std::ops::{Add, Sub, AddAssign, SubAssign};
 
 use num_traits::identities;
 use num_traits::{Bounded, WrappingAdd, WrappingSub, CheckedAdd, CheckedSub};
@@ -17,6 +17,7 @@ pub trait Address where Self:
     Copy + Clone + Sized +
     Ord + Eq + PartialEq + Bounded +
     Add<Output=Self> + Sub<Output=Self> +
+    AddAssign + SubAssign +
     WrappingAdd + WrappingSub +
     CheckedAdd + CheckedSub +
     identities::One + identities::Zero {
@@ -55,11 +56,12 @@ pub trait Decodable where Self: Sized {
 
 pub trait Arch {
     type Address: Address + Debug;
-    type Instruction: Decodable + LengthedInstruction<Unit=Self::Address>;
+    type Instruction: Decodable + LengthedInstruction<Unit=Self::Address> + Debug;
     type Operand;
 }
 
 pub trait LengthedInstruction {
     type Unit;
     fn len(&self) -> Self::Unit;
+    fn min_size() -> Self::Unit;
 }
