@@ -1,5 +1,7 @@
 extern crate num_traits;
 
+use std::str::FromStr;
+
 use std::fmt::{Debug, Display};
 
 use std::ops::{Add, Sub, AddAssign, SubAssign};
@@ -20,14 +22,22 @@ pub trait Address where Self:
     AddAssign + SubAssign +
     WrappingAdd + WrappingSub +
     CheckedAdd + CheckedSub +
+    FromStr +
     identities::One + identities::Zero {
     fn to_linear(&self) -> usize;
+
 }
 /*
 impl <T> Address for T where T: Sized + Ord + Add<Output=Self> + From<u16> + Into<usize> {
     fn to_linear(&self) -> usize { *self.into() }
 }
 */
+
+impl AddressDisplay for usize {
+    fn stringy(&self) -> String {
+        format!("{:#x}", self)
+    }
+}
 
 impl AddressDisplay for u32 {
     fn stringy(&self) -> String {
@@ -49,9 +59,13 @@ impl Address for u32 {
     fn to_linear(&self) -> usize { *self as usize }
 }
 
+impl Address for usize {
+    fn to_linear(&self) -> usize { *self }
+}
+
 pub trait Decodable where Self: Sized {
-    fn decode<'a, T: IntoIterator<Item=&'a u8>>(bytes: T) -> Option<Self>;
-    fn decode_into<'a, T: IntoIterator<Item=&'a u8>>(&mut self, bytes: T) -> Option<()>;
+    fn decode<T: IntoIterator<Item=u8>>(bytes: T) -> Option<Self>;
+    fn decode_into<T: IntoIterator<Item=u8>>(&mut self, bytes: T) -> Option<()>;
 }
 
 pub trait Arch {
