@@ -39,6 +39,12 @@ impl AddressDisplay for usize {
     }
 }
 
+impl AddressDisplay for u64 {
+    fn stringy(&self) -> String {
+        format!("{:#x}", self)
+    }
+}
+
 impl AddressDisplay for u32 {
     fn stringy(&self) -> String {
         format!("{:#x}", self)
@@ -56,6 +62,10 @@ impl Address for u16 {
 }
 
 impl Address for u32 {
+    fn to_linear(&self) -> usize { *self as usize }
+}
+
+impl Address for u64 {
     fn to_linear(&self) -> usize { *self as usize }
 }
 
