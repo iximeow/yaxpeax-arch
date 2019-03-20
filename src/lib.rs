@@ -2,7 +2,7 @@ extern crate num_traits;
 
 use std::str::FromStr;
 
-use std::fmt::{Debug, Display};
+use std::fmt::{Debug, Display, Formatter};
 
 use std::ops::{Add, Sub, AddAssign, SubAssign};
 
@@ -89,3 +89,44 @@ pub trait LengthedInstruction {
     fn len(&self) -> Self::Unit;
     fn min_size() -> Self::Unit;
 }
+
+pub struct ColorSettings {
+}
+
+/*
+ * can this be a derivable trait or something?
+ */
+/*
+impl <T: Colorize> Display for T {
+    fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
+        self.colorize(None, fmt)
+    }
+}
+*/
+
+pub trait Colorize<T: std::fmt::Write> {
+    fn colorize(&self, colors: Option<&ColorSettings>, out: &mut T) -> std::fmt::Result;
+}
+
+/*
+ * and make this auto-derive from a ShowContextual impl?
+ */
+/*
+impl <T, U> Colorize for T where T: ShowContextual<Ctx=U> {
+    fn colorize(&self, colors: Option<&ColorSettings>, fmt: &mut Formatter) -> std::fmt::Result {
+        self.contextualize(colors, None, fmt)
+    }
+}
+*/
+
+pub trait ShowContextual<Addr, Ctx: ?Sized, T: std::fmt::Write> {
+    fn contextualize(&self, colors: Option<&ColorSettings>, address: Addr, context: Option<&Ctx>, out: &mut T) -> std::fmt::Result;
+}
+
+/*
+impl <C: ?Sized, T: std::fmt::Write, U: Colorize<T>> ShowContextual<C, T> for U {
+    fn contextualize(&self, colors: Option<&ColorSettings>, context: Option<&C>, out: &mut T) -> std::fmt::Result {
+        self.colorize(colors, out)
+    }
+}
+*/
