@@ -1,4 +1,5 @@
 extern crate num_traits;
+extern crate termion;
 
 use std::str::FromStr;
 
@@ -6,10 +7,14 @@ use std::fmt::{Debug, Display, Formatter};
 
 use std::ops::{Add, Sub, AddAssign, SubAssign};
 
+use std::rc::Rc;
+
 use num_traits::identities;
 use num_traits::{Bounded, WrappingAdd, WrappingSub, CheckedAdd, CheckedSub};
-                                                             // This is pretty wonk..
 
+use termion::color;
+
+                                                             // This is pretty wonk..
 pub trait AddressDisplay {
     fn stringy(&self) -> String;
 }
@@ -91,6 +96,44 @@ pub trait LengthedInstruction {
 }
 
 pub struct ColorSettings {
+    arithmetic: color::Fg<&'static color::Color>,
+    stack: color::Fg<&'static color::Color>,
+    nop: color::Fg<&'static color::Color>,
+    stop: color::Fg<&'static color::Color>,
+    control: color::Fg<&'static color::Color>,
+    data: color::Fg<&'static color::Color>,
+    comparison: color::Fg<&'static color::Color>,
+    invalid: color::Fg<&'static color::Color>,
+    platform: color::Fg<&'static color::Color>,
+    misc: color::Fg<&'static color::Color>
+}
+
+impl Default for ColorSettings {
+    fn default() -> ColorSettings {
+        ColorSettings {
+            arithmetic: color::Fg(&color::LightYellow),
+            stack: color::Fg(&color::Magenta),
+            nop: color::Fg(&color::Blue),
+            stop: color::Fg(&color::LightRed),
+            control: color::Fg(&color::Green),
+            data: color::Fg(&color::LightMagenta),
+            comparison: color::Fg(&color::Yellow),
+            invalid: color::Fg(&color::Red),
+            platform: color::Fg(&color::Cyan),
+            misc: color::Fg(&color::LightCyan),
+        }
+    }
+}
+
+impl ColorSettings {
+    pub fn arithmetic_op(&self) -> &color::Fg<&'static color::Color> { &self.arithmetic }
+    pub fn stack_op(&self) -> &color::Fg<&'static color::Color> { &self.stack }
+    pub fn nop_op(&self) -> &color::Fg<&'static color::Color> { &self.nop }
+    pub fn stop_op(&self) -> &color::Fg<&'static color::Color> { &self.stop }
+    pub fn control_flow_op(&self) -> &color::Fg<&'static color::Color> { &self.control }
+    pub fn data_op(&self) -> &color::Fg<&'static color::Color> { &self.data }
+    pub fn comparison_op(&self) -> &color::Fg<&'static color::Color> { &self.comparison }
+    pub fn invalid_op(&self) -> &color::Fg<&'static color::Color> { &self.invalid }
 }
 
 /*
