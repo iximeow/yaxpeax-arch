@@ -14,6 +14,7 @@ use num_traits::{Bounded, WrappingAdd, WrappingSub, CheckedAdd, CheckedSub};
 
 use termion::color;
 
+pub mod display;
                                                              // This is pretty wonk..
 pub trait AddressDisplay {
     fn stringy(&self) -> String;
