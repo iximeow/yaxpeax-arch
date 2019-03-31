@@ -201,7 +201,7 @@ impl Default for ColorSettings {
             data: color::Fg(&color::Yellow),
             comparison: color::Fg(&color::Yellow),
             invalid: color::Fg(&color::Red),
-            platform: color::Fg(&color::Cyan),
+            platform: color::Fg(&color::LightBlue),
             misc: color::Fg(&color::LightCyan),
 
             register: color::Fg(&color::Cyan),
@@ -227,6 +227,7 @@ pub trait YaxColors {
     fn data_op<T: Display>(&self, t: T) -> Colored<T>;
     fn comparison_op<T: Display>(&self, t: T) -> Colored<T>;
     fn invalid_op<T: Display>(&self, t: T) -> Colored<T>;
+    fn platform_op<T: Display>(&self, t: T) -> Colored<T>;
 
     fn register<T: Display>(&self, t: T) -> Colored<T>;
     fn number<T: Display>(&self, t: T) -> Colored<T>;
@@ -262,6 +263,9 @@ impl YaxColors for ColorSettings {
     }
     fn invalid_op<T: Display>(&self, t: T) -> Colored<T> {
         Colored::Color(t, self.invalid)
+    }
+    fn platform_op<T: Display>(&self, t: T) -> Colored<T> {
+        Colored::Color(t, self.platform)
     }
 
     fn register<T: Display>(&self, t: T) -> Colored<T> {
@@ -336,6 +340,12 @@ impl <'a> YaxColors for Option<&'a ColorSettings> {
     fn invalid_op<T: Display>(&self, t: T) -> Colored<T> {
         match self {
             Some(colors) => { colors.invalid_op(t) }
+            None => { Colored::Just(t) }
+        }
+    }
+    fn platform_op<T: Display>(&self, t: T) -> Colored<T> {
+        match self {
+            Some(colors) => { colors.platform_op(t) }
             None => { Colored::Just(t) }
         }
     }
