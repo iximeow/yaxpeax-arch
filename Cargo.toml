@@ -10,3 +10,6 @@ description = "fundamental traits to describe an architecture in the yaxpeax pro
 [dependencies]
 "num-traits" = "0.2"
 "termion" = "1.4.0"
+
+[profile.release]
+lto = true
