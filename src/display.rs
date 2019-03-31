@@ -78,7 +78,7 @@ pub fn signed_i8_hex(imm: i8) -> String {
     } else {
         (false, imm)
     };
-    format!("{}{:#x}", sign, imm)
+    format!("{}{:#x}", if sign { "-" } else { "" } , imm)
 }
 
 pub fn signed_i16_hex(imm: i16) -> String {
@@ -89,7 +89,7 @@ pub fn signed_i16_hex(imm: i16) -> String {
     } else {
         (false, imm)
     };
-    format!("{}{:#x}", sign, imm)
+    format!("{}{:#x}", if sign { "-" } else { "" } , imm)
 }
 
 pub fn signed_i32_hex(imm: i32) -> String {
@@ -100,7 +100,7 @@ pub fn signed_i32_hex(imm: i32) -> String {
     } else {
         (false, imm)
     };
-    format!("{}{:#x}", sign, imm)
+    format!("{}{:#x}", if sign { "-" } else { "" } , imm)
 }
 
 pub fn signed_i64_hex(imm: i64) -> String {
@@ -111,5 +111,5 @@ pub fn signed_i64_hex(imm: i64) -> String {
     } else {
         (false, imm)
     };
-    format!("{}{:#x}", sign, imm)
+    format!("{}{:#x}", if sign { "-" } else { "" } , imm)
 }
