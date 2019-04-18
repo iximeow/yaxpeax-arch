@@ -167,6 +167,7 @@ pub struct ColorSettings {
     misc: color::Fg<&'static color::Color>,
 
     register: color::Fg<&'static color::Color>,
+    program_counter: color::Fg<&'static color::Color>,
 
     number: color::Fg<&'static color::Color>,
     zero: color::Fg<&'static color::Color>,
@@ -205,6 +206,7 @@ impl Default for ColorSettings {
             misc: color::Fg(&color::LightCyan),
 
             register: color::Fg(&color::Cyan),
+            program_counter: color::Fg(&color::Red),
 
             number: color::Fg(&color::White),
             zero: color::Fg(&color::White),
@@ -230,6 +232,7 @@ pub trait YaxColors {
     fn platform_op<T: Display>(&self, t: T) -> Colored<T>;
 
     fn register<T: Display>(&self, t: T) -> Colored<T>;
+    fn program_counter<T: Display>(&self, t: T) -> Colored<T>;
     fn number<T: Display>(&self, t: T) -> Colored<T>;
     fn zero<T: Display>(&self, t: T) -> Colored<T>;
     fn one<T: Display>(&self, t: T) -> Colored<T>;
@@ -270,6 +273,9 @@ impl YaxColors for ColorSettings {
 
     fn register<T: Display>(&self, t: T) -> Colored<T> {
         Colored::Color(t, self.register)
+    }
+    fn program_counter<T: Display>(&self, t: T) -> Colored<T> {
+        Colored::Color(t, self.program_counter)
     }
     fn number<T: Display>(&self, t: T) -> Colored<T> {
         Colored::Color(t, self.number)
@@ -353,6 +359,12 @@ impl <'a> YaxColors for Option<&'a ColorSettings> {
     fn register<T: Display>(&self, t: T) -> Colored<T> {
         match self {
             Some(colors) => { colors.register(t) }
+            None => { Colored::Just(t) }
+        }
+    }
+    fn program_counter<T: Display>(&self, t: T) -> Colored<T> {
+        match self {
+            Some(colors) => { colors.program_counter(t) }
             None => { Colored::Just(t) }
         }
     }
