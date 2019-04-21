@@ -1,5 +1,7 @@
 extern crate num_traits;
 extern crate termion;
+#[cfg(feature="use-serde")]
+extern crate serde;
 
 use std::str::FromStr;
 
@@ -13,6 +15,9 @@ use num_traits::identities;
 use num_traits::{Bounded, WrappingAdd, WrappingSub, CheckedAdd, CheckedSub};
 
 use termion::color;
+
+#[cfg(feature="use-serde")]
+use serde::{Serialize, Deserialize};
 
 pub mod display;
                                                              // This is pretty wonk..
@@ -34,6 +39,22 @@ pub trait AddrParse: Sized {
     fn parse_from(s: &str) -> Result<Self, Self::Err>;
 }
 
+#[cfg(feature="use-serde")]
+pub trait Address where Self:
+    Serialize + for<'de> Deserialize<'de> +
+    Debug + Display + AddressDisplay +
+    Copy + Clone + Sized +
+    Ord + Eq + PartialEq + Bounded +
+    Add<Output=Self> + Sub<Output=Self> +
+    AddAssign + SubAssign +
+    WrappingAdd + WrappingSub +
+    CheckedAdd + CheckedSub +
+    AddrParse +
+    identities::One + identities::Zero {
+    fn to_linear(&self) -> usize;
+
+}
+#[cfg(not(feature="use-serde"))]
 pub trait Address where Self:
     Debug + Display + AddressDisplay +
     Copy + Clone + Sized +
@@ -142,6 +163,14 @@ pub trait Decodable where Self: Sized {
     fn decode_into<T: IntoIterator<Item=u8>>(&mut self, bytes: T) -> Option<()>;
 }
 
+#[cfg(feature="use-serde")]
+pub trait Arch {
+    type Address: Address + Debug + Serialize + for<'de> Deserialize<'de>;
+    type Instruction: Decodable + LengthedInstruction<Unit=Self::Address> + Debug;
+    type Operand;
+}
+
+#[cfg(not(feature="use-serde"))]
 pub trait Arch {
     type Address: Address + Debug;
     type Instruction: Decodable + LengthedInstruction<Unit=Self::Address> + Debug;

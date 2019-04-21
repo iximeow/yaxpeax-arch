@@ -10,6 +10,14 @@ description = "fundamental traits to describe an architecture in the yaxpeax pro
 [dependencies]
 "num-traits" = "0.2"
 "termion" = "1.4.0"
+"serde" = "*"
 
 [profile.release]
 lto = true
+
+[features]
+default = []
+
+# enables the (optional) use of Serde for bounds on
+# Arch and Arch::Address
+use-serde = []
