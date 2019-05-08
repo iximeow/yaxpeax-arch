@@ -4,6 +4,7 @@ extern crate termion;
 extern crate serde;
 
 use std::str::FromStr;
+use std::hash::Hash;
 
 use std::fmt::{Debug, Display, Formatter};
 
@@ -165,14 +166,14 @@ pub trait Decodable where Self: Sized {
 
 #[cfg(feature="use-serde")]
 pub trait Arch {
-    type Address: Address + Debug + Serialize + for<'de> Deserialize<'de>;
+    type Address: Address + Debug + Hash + PartialEq + Eq + Serialize + for<'de> Deserialize<'de>;
     type Instruction: Decodable + LengthedInstruction<Unit=Self::Address> + Debug;
     type Operand;
 }
 
 #[cfg(not(feature="use-serde"))]
 pub trait Arch {
-    type Address: Address + Debug;
+    type Address: Address + Debug + Hash + PartialEq + Eq;
     type Instruction: Decodable + LengthedInstruction<Unit=Self::Address> + Debug;
     type Operand;
 }
@@ -181,6 +182,15 @@ pub trait LengthedInstruction {
     type Unit;
     fn len(&self) -> Self::Unit;
     fn min_size() -> Self::Unit;
+}
+
+#[cfg(feature="use-serde")]
+impl Serialize for ColorSettings {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeStruct;
+        let mut s = serializer.serialize_struct("ColorSettings", 0)?;
+        s.end()
+    }
 }
 
 pub struct ColorSettings {
