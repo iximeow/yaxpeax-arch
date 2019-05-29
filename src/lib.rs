@@ -10,8 +10,6 @@ use std::fmt::{Debug, Display, Formatter};
 
 use std::ops::{Add, Sub, AddAssign, SubAssign};
 
-use std::rc::Rc;
-
 use num_traits::identities;
 use num_traits::{Bounded, WrappingAdd, WrappingSub, CheckedAdd, CheckedSub};
 
