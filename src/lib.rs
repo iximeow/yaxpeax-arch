@@ -49,6 +49,7 @@ pub trait Address where Self:
     WrappingAdd + WrappingSub +
     CheckedAdd + CheckedSub +
     AddrParse +
+    Hash +
     identities::One + identities::Zero {
     fn to_linear(&self) -> usize;
 
@@ -63,6 +64,7 @@ pub trait Address where Self:
     WrappingAdd + WrappingSub +
     CheckedAdd + CheckedSub +
     AddrParse +
+    Hash +
     identities::One + identities::Zero {
     fn to_linear(&self) -> usize;
 
