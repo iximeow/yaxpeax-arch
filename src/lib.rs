@@ -42,7 +42,7 @@ pub trait AddrParse: Sized {
 pub trait Address where Self:
     Serialize + for<'de> Deserialize<'de> +
     Debug + Display + AddressDisplay +
-    Copy + Clone + Sized +
+    Copy + Clone + Sized + Hash +
     Ord + Eq + PartialEq + Bounded +
     Add<Output=Self> + Sub<Output=Self> +
     AddAssign + SubAssign +
@@ -57,7 +57,7 @@ pub trait Address where Self:
 #[cfg(not(feature="use-serde"))]
 pub trait Address where Self:
     Debug + Display + AddressDisplay +
-    Copy + Clone + Sized +
+    Copy + Clone + Sized + Hash +
     Ord + Eq + PartialEq + Bounded +
     Add<Output=Self> + Sub<Output=Self> +
     AddAssign + SubAssign +
@@ -188,34 +188,35 @@ pub trait LengthedInstruction {
 impl Serialize for ColorSettings {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         use serde::ser::SerializeStruct;
-        let mut s = serializer.serialize_struct("ColorSettings", 0)?;
+        let s = serializer.serialize_struct("ColorSettings", 0)?;
         s.end()
     }
 }
 
+#[allow(dead_code)]
 pub struct ColorSettings {
-    arithmetic: color::Fg<&'static color::Color>,
-    stack: color::Fg<&'static color::Color>,
-    nop: color::Fg<&'static color::Color>,
-    stop: color::Fg<&'static color::Color>,
-    control: color::Fg<&'static color::Color>,
-    data: color::Fg<&'static color::Color>,
-    comparison: color::Fg<&'static color::Color>,
-    invalid: color::Fg<&'static color::Color>,
-    platform: color::Fg<&'static color::Color>,
-    misc: color::Fg<&'static color::Color>,
+    arithmetic: color::Fg<&'static dyn color::Color>,
+    stack: color::Fg<&'static dyn color::Color>,
+    nop: color::Fg<&'static dyn color::Color>,
+    stop: color::Fg<&'static dyn color::Color>,
+    control: color::Fg<&'static dyn color::Color>,
+    data: color::Fg<&'static dyn color::Color>,
+    comparison: color::Fg<&'static dyn color::Color>,
+    invalid: color::Fg<&'static dyn color::Color>,
+    platform: color::Fg<&'static dyn color::Color>,
+    misc: color::Fg<&'static dyn color::Color>,
 
-    register: color::Fg<&'static color::Color>,
-    program_counter: color::Fg<&'static color::Color>,
+    register: color::Fg<&'static dyn color::Color>,
+    program_counter: color::Fg<&'static dyn color::Color>,
 
-    number: color::Fg<&'static color::Color>,
-    zero: color::Fg<&'static color::Color>,
-    one: color::Fg<&'static color::Color>,
-    minus_one: color::Fg<&'static color::Color>,
+    number: color::Fg<&'static dyn color::Color>,
+    zero: color::Fg<&'static dyn color::Color>,
+    one: color::Fg<&'static dyn color::Color>,
+    minus_one: color::Fg<&'static dyn color::Color>,
 
-    function: color::Fg<&'static color::Color>,
-    symbol: color::Fg<&'static color::Color>,
-    address: color::Fg<&'static color::Color>
+    function: color::Fg<&'static dyn color::Color>,
+    symbol: color::Fg<&'static dyn color::Color>,
+    address: color::Fg<&'static dyn color::Color>
 }
 
 impl Default for ColorSettings {
@@ -452,7 +453,7 @@ impl <'a> YaxColors for Option<&'a ColorSettings> {
 }
 
 pub enum Colored<T: Display> {
-    Color(T, color::Fg<&'static color::Color>),
+    Color(T, color::Fg<&'static dyn color::Color>),
     Just(T)
 }
 
