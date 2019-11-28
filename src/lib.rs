@@ -159,22 +159,24 @@ impl Address for usize {
     fn to_linear(&self) -> usize { *self }
 }
 
-pub trait Decodable where Self: Sized {
-    fn decode<T: IntoIterator<Item=u8>>(bytes: T) -> Option<Self>;
-    fn decode_into<T: IntoIterator<Item=u8>>(&mut self, bytes: T) -> Option<()>;
+pub trait Decoder<Inst> where Inst: Sized {
+    fn decode<T: IntoIterator<Item=u8>>(&self, bytes: T) -> Option<Inst>;
+    fn decode_into<T: IntoIterator<Item=u8>>(&self, &mut Inst, bytes: T) -> Option<()>;
 }
 
 #[cfg(feature="use-serde")]
 pub trait Arch {
     type Address: Address + Debug + Hash + PartialEq + Eq + Serialize + for<'de> Deserialize<'de>;
-    type Instruction: Decodable + LengthedInstruction<Unit=Self::Address> + Debug;
+    type Instruction: LengthedInstruction<Unit=Self::Address> + Debug;
+    type Decoder: Decoder<Self::Instruction> + Default;
     type Operand;
 }
 
 #[cfg(not(feature="use-serde"))]
 pub trait Arch {
     type Address: Address + Debug + Hash + PartialEq + Eq;
-    type Instruction: Decodable + LengthedInstruction<Unit=Self::Address> + Debug;
+    type Instruction: LengthedInstruction<Unit=Self::Address> + Debug;
+    type Decoder: Decoder<Self::Instruction> + Default;
     type Operand;
 }
 
