@@ -272,6 +272,7 @@ pub trait YaxColors {
     fn comparison_op<T: Display>(&self, t: T) -> Colored<T>;
     fn invalid_op<T: Display>(&self, t: T) -> Colored<T>;
     fn platform_op<T: Display>(&self, t: T) -> Colored<T>;
+    fn misc_op<T: Display>(&self, t: T) -> Colored<T>;
 
     fn register<T: Display>(&self, t: T) -> Colored<T>;
     fn program_counter<T: Display>(&self, t: T) -> Colored<T>;
@@ -308,6 +309,9 @@ impl YaxColors for ColorSettings {
     }
     fn invalid_op<T: Display>(&self, t: T) -> Colored<T> {
         Colored::Color(t, self.invalid)
+    }
+    fn misc_op<T: Display>(&self, t: T) -> Colored<T> {
+        Colored::Color(t, self.misc)
     }
     fn platform_op<T: Display>(&self, t: T) -> Colored<T> {
         Colored::Color(t, self.platform)
@@ -388,6 +392,12 @@ impl <'a> YaxColors for Option<&'a ColorSettings> {
     fn invalid_op<T: Display>(&self, t: T) -> Colored<T> {
         match self {
             Some(colors) => { colors.invalid_op(t) }
+            None => { Colored::Just(t) }
+        }
+    }
+    fn misc_op<T: Display>(&self, t: T) -> Colored<T> {
+        match self {
+            Some(colors) => { colors.misc_op(t) }
             None => { Colored::Just(t) }
         }
     }
