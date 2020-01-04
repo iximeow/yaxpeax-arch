@@ -159,24 +159,33 @@ impl Address for usize {
     fn to_linear(&self) -> usize { *self }
 }
 
+pub trait DecodeError {
+    fn data_exhausted(&self) -> bool;
+    fn bad_opcode(&self) -> bool;
+    fn bad_operand(&self) -> bool;
+}
+
 pub trait Decoder<Inst> where Inst: Sized {
-    fn decode<T: IntoIterator<Item=u8>>(&self, bytes: T) -> Option<Inst>;
-    fn decode_into<T: IntoIterator<Item=u8>>(&self, &mut Inst, bytes: T) -> Option<()>;
+    type Error: DecodeError + Debug + Display;
+    fn decode<T: IntoIterator<Item=u8>>(&self, bytes: T) -> Result<Inst, Self::Error>;
+    fn decode_into<T: IntoIterator<Item=u8>>(&self, &mut Inst, bytes: T) -> Result<(), Self::Error>;
 }
 
 #[cfg(feature="use-serde")]
 pub trait Arch {
     type Address: Address + Debug + Hash + PartialEq + Eq + Serialize + for<'de> Deserialize<'de>;
-    type Instruction: LengthedInstruction<Unit=Self::Address> + Debug;
-    type Decoder: Decoder<Self::Instruction> + Default;
+    type Instruction: Instruction + LengthedInstruction<Unit=Self::Address> + Debug;
+    type DecodeError: DecodeError + Debug + Display;
+    type Decoder: Decoder<Self::Instruction, Error=Self::DecodeError> + Default;
     type Operand;
 }
 
 #[cfg(not(feature="use-serde"))]
 pub trait Arch {
     type Address: Address + Debug + Hash + PartialEq + Eq;
-    type Instruction: LengthedInstruction<Unit=Self::Address> + Debug;
-    type Decoder: Decoder<Self::Instruction> + Default;
+    type Instruction: Instruction + LengthedInstruction<Unit=Self::Address> + Debug;
+    type DecodeError: DecodeError + Debug + Display;
+    type Decoder: Decoder<Self::Instruction, Error=Self::DecodeError> + Default;
     type Operand;
 }
 
@@ -184,6 +193,10 @@ pub trait LengthedInstruction {
     type Unit;
     fn len(&self) -> Self::Unit;
     fn min_size() -> Self::Unit;
+}
+
+pub trait Instruction {
+    fn well_defined(&self) -> bool;
 }
 
 #[cfg(feature="use-serde")]
