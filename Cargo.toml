@@ -1,11 +1,13 @@
 [package]
 
-name = "yaxpeax-arch"
-version = "0.0.1"
 authors = [ "iximeow <me@iximeow.net>" ]
-license = "0BSD"
-repository = "https://git.iximeow.net/yaxpeax-arch/"
 description = "fundamental traits to describe an architecture in the yaxpeax project"
+keywords = ["disassembly", "disassembler"]
+license = "0BSD"
+name = "yaxpeax-arch"
+repository = "https://git.iximeow.net/yaxpeax-arch/"
+version = "0.0.1"
+edition = "2018"
 
 [dependencies]
 "num-traits" = "0.2"
