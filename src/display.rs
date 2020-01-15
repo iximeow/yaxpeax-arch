@@ -1,3 +1,9 @@
+use crate::YaxColors;
+
+use core::fmt;
+use core::num::Wrapping;
+use core::ops::Neg;
+
 pub enum NumberStyleHint {
     Signed,
     HexSigned,
@@ -11,105 +17,120 @@ pub enum NumberStyleHint {
     HexUnsignedWithSign
 }
 
-pub fn format_number_i32(i: i32, hint: NumberStyleHint) -> String {
+pub fn format_number_i32<W: fmt::Write, Color: fmt::Display, Y: YaxColors<Color>>(colors: &Y, f: &mut W, i: i32, hint: NumberStyleHint) -> fmt::Result {
     match hint {
         NumberStyleHint::Signed => {
-            format!("{}", i)
+            write!(f, "{}", colors.number(i))
         },
         NumberStyleHint::HexSigned => {
-            if i == std::i32::MIN {
-                format!("-0x7fffffff")
-            } else if i < 0 {
-                format!("-{:#x}", -i)
-            } else {
-                format!("{:#x}", i)
-            }
+            write!(f, "{}", colors.number(signed_i32_hex(i)))
         },
         NumberStyleHint::Unsigned => {
-            format!("{}", i as u32)
+            write!(f, "{}", colors.number(i as u32))
         },
         NumberStyleHint::HexUnsigned => {
-            format!("{:#x}", i as u32)
+            write!(f, "{}", colors.number(u32_hex(i as u32)))
         },
         NumberStyleHint::SignedWithSignSplit => {
-            if i == std::i32::MIN {
-                format!("- 2147483647")
+            if i == core::i32::MIN {
+                write!(f, "- {}", colors.number("2147483647"))
             } else if i < 0 {
-                format!("- {}", -i)
+                write!(f, "- {}", colors.number(-Wrapping(i)))
             } else {
-                format!("+ {}", i)
+                write!(f, "+ {}", colors.number(i))
             }
         }
         NumberStyleHint::HexSignedWithSignSplit => {
-            if i == std::i32::MIN {
-                format!("- 0x7fffffff")
+            if i == core::i32::MIN {
+                write!(f, "- {}", colors.number("0x7fffffff"))
             } else if i < 0 {
-                format!("- {:#x}", -i)
+                write!(f, "- {}", colors.number(u32_hex((-Wrapping(i)).0 as u32)))
             } else {
-                format!("+ {:#x}", i)
+                write!(f, "+ {}", colors.number(u32_hex(i as u32)))
             }
         },
         NumberStyleHint::HexSignedWithSign => {
-            if i == std::i32::MIN {
-                format!("-0x7fffffff")
-            } else if i < 0 {
-                format!("-{:#x}", -i)
-            } else {
-                format!("+{:#x}", i)
-            }
+            write!(f, "{}", signed_i32_hex(i))
         },
         NumberStyleHint::SignedWithSign => {
-            format!("{:+}", i)
+            write!(f, "{:+}", i)
         }
         NumberStyleHint::HexUnsignedWithSign => {
-            format!("{:+#x}", i as u32)
+            write!(f, "{:+#x}", i as u32)
         },
         NumberStyleHint::UnsignedWithSign => {
-            format!("{:+}", i as u32)
+            write!(f, "{:+}", i as u32)
         }
     }
 }
 
-pub fn signed_i8_hex(imm: i8) -> String {
-    let (sign, imm) = if imm == std::i8::MIN {
-        (false, imm)
-    } else if imm < 0 {
-        (true, -imm)
-    } else {
-        (false, imm)
-    };
-    format!("{}{:#x}", if sign { "-" } else { "" } , imm)
+pub struct SignedHexDisplay<T: core::fmt::LowerHex + Neg> {
+    value: T,
+    negative: bool
 }
 
-pub fn signed_i16_hex(imm: i16) -> String {
-    let (sign, imm) = if imm == std::i16::MIN {
-        (false, imm)
-    } else if imm < 0 {
-        (true, -imm)
-    } else {
-        (false, imm)
-    };
-    format!("{}{:#x}", if sign { "-" } else { "" } , imm)
+impl<T: fmt::LowerHex + Neg + Copy> fmt::Display for SignedHexDisplay<T> where Wrapping<T>: Neg, <Wrapping<T> as Neg>::Output: fmt::LowerHex {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.negative {
+            write!(f, "-{:#x}", -Wrapping(self.value))
+        } else {
+            write!(f, "{:#x}", self.value)
+        }
+    }
 }
 
-pub fn signed_i32_hex(imm: i32) -> String {
-    let (sign, imm) = if imm == std::i32::MIN {
-        (false, imm)
-    } else if imm < 0 {
-        (true, -imm)
-    } else {
-        (false, imm)
-    };
-    format!("{}{:#x}", if sign { "-" } else { "" } , imm)
+pub fn u8_hex(value: u8) -> SignedHexDisplay<i8> {
+    SignedHexDisplay {
+        value: value as i8,
+        negative: false,
+    }
 }
 
-pub fn signed_i64_hex(imm: i64) -> String {
-    let (sign, imm) = if imm == std::i64::MIN {
-        (false, imm)
-    } else if imm < 0 {
-        (true, -imm)
-    } else {
-        (false, imm)
-    };
-    format!("{}{:#x}", if sign { "-" } else { "" } , imm)
+pub fn signed_i8_hex(imm: i8) -> SignedHexDisplay<i8> {
+    SignedHexDisplay {
+        value: imm,
+        negative: imm < 0,
+    }
+}
+
+pub fn u16_hex(value: u16) -> SignedHexDisplay<i16> {
+    SignedHexDisplay {
+        value: value as i16,
+        negative: false,
+    }
+}
+
+pub fn signed_i16_hex(imm: i16) -> SignedHexDisplay<i16> {
+    SignedHexDisplay {
+        value: imm,
+        negative: imm < 0,
+    }
+}
+
+pub fn u32_hex(value: u32) -> SignedHexDisplay<i32> {
+    SignedHexDisplay {
+        value: value as i32,
+        negative: false,
+    }
+}
+
+pub fn signed_i32_hex(imm: i32) -> SignedHexDisplay<i32> {
+    SignedHexDisplay {
+        value: imm,
+        negative: imm < 0,
+    }
+}
+
+pub fn u64_hex(value: u64) -> SignedHexDisplay<i64> {
+    SignedHexDisplay {
+        value: value as i64,
+        negative: false,
+    }
+}
+
+pub fn signed_i64_hex(imm: i64) -> SignedHexDisplay<i64> {
+    SignedHexDisplay {
+        value: imm,
+        negative: imm < 0,
+    }
 }

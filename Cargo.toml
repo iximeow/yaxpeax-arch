@@ -10,16 +10,20 @@ repository = "https://git.iximeow.net/yaxpeax-arch/"
 version = "0.0.1"
 
 [dependencies]
-"num-traits" = "0.2"
-"termion" = "1.4.0"
-"serde" = "1.0"
+"num-traits" = { version = "0.2", default-features = false }
+"termion" = { version = "1.4.0", optional = true }
+"serde" = { version = "1.0", optional = true }
 
 [profile.release]
 lto = true
 
 [features]
-default = []
+default = ["use-serde", "colors", "address-parse"]
 
 # enables the (optional) use of Serde for bounds on
 # Arch and Arch::Address
-use-serde = []
+use-serde = ["serde"]
+
+colors = ["termion"]
+
+address-parse = []
