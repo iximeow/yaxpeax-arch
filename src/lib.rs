@@ -17,7 +17,10 @@ extern crate termion;
 use serde::{Serialize, Deserialize};
 
 mod address;
-pub use address::{Address, AddressBase};
+pub use address::{Address, AddressBase, AddressDisplay};
+pub use address::{AddressDisplayUsize, AddressDisplayU64, AddressDisplayU32, AddressDisplayU16};
+#[cfg(feature="address-parse")]
+pub use address::AddrParse;
 
 mod color;
 pub use color::{Colorize, NoColors, YaxColors};

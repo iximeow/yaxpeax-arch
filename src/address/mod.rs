@@ -1,6 +1,6 @@
 use core::hash::Hash;
 
-use core::fmt::{self, Debug, Display, Formatter};
+use core::fmt;
 
 use core::ops::{Add, Sub, AddAssign, SubAssign};
 
@@ -11,7 +11,7 @@ use num_traits::{Bounded, WrappingAdd, WrappingSub, CheckedAdd, CheckedSub};
 use serde::{Deserialize, Serialize};
 
 pub trait AddressBase where Self:
-    Debug + Display + AddressDisplay +
+    AddressDisplay +
     Copy + Clone + Sized + Hash +
     Ord + Eq + PartialEq + Bounded +
     Add<Output=Self> + Sub<Output=Self> +
@@ -69,30 +69,75 @@ impl AddressBase for usize {
 impl Address for usize {}
 
 pub trait AddressDisplay {
-    fn show(&self, f: &mut Formatter) -> fmt::Result;
+    type Show: fmt::Display;
+    fn show(&self) -> Self::Show;
 }
 
 impl AddressDisplay for usize {
-    fn show(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{:#x}", self)
+    type Show = AddressDisplayUsize;
+
+    fn show(&self) -> AddressDisplayUsize {
+        AddressDisplayUsize(*self)
+    }
+}
+
+#[repr(transparent)]
+pub struct AddressDisplayUsize(usize);
+
+impl fmt::Display for AddressDisplayUsize {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:#x}", self.0)
     }
 }
 
 impl AddressDisplay for u64 {
-    fn show(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{:#x}", self)
+    type Show = AddressDisplayU64;
+
+    fn show(&self) -> AddressDisplayU64 {
+        AddressDisplayU64(*self)
+    }
+}
+
+#[repr(transparent)]
+pub struct AddressDisplayU64(u64);
+
+impl fmt::Display for AddressDisplayU64 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:#x}", self.0)
     }
 }
 
 impl AddressDisplay for u32 {
-    fn show(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{:#x}", self)
+    type Show = AddressDisplayU32;
+
+    fn show(&self) -> AddressDisplayU32 {
+        AddressDisplayU32(*self)
+    }
+}
+
+#[repr(transparent)]
+pub struct AddressDisplayU32(u32);
+
+impl fmt::Display for AddressDisplayU32 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:#x}", self.0)
     }
 }
 
 impl AddressDisplay for u16 {
-    fn show(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{:#x}", self)
+    type Show = AddressDisplayU16;
+
+    fn show(&self) -> AddressDisplayU16 {
+        AddressDisplayU16(*self)
+    }
+}
+
+#[repr(transparent)]
+pub struct AddressDisplayU16(u16);
+
+impl fmt::Display for AddressDisplayU16 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:#x}", self.0)
     }
 }
 
