@@ -153,7 +153,6 @@ mod termion_color {
         address: color::Fg<&'static dyn color::Color>,
     }
 
-    #[cfg(feature="colorize")]
     impl Default for ColorSettings {
         fn default() -> ColorSettings {
             ColorSettings {
