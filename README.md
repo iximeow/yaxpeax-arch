@@ -21,6 +21,7 @@ there are numerous architectures for which decoders are implemented, at varying 
 | `x86:16` | yaxpeax-x86 | ❓ | ❓ | ❓ | should share most but not all implementation with `x86:32` |
 | `armv7` | yaxpeax-arm | 🚧 | 🚧 | ❓ | |
 | `armv8` | yaxpeax-arm | 🚧 | 🚧 | ❓ | |
+| `m16c` | yaxpeax-m16c | ⚠️ | 🚧 | ❓ | |
 | `mips` | yaxpeax-mips | 🚧 | 🚧 | ❓ | |
 | `msp430` | yaxpeax-msp430 | 🚧 | 🚧 | ❓ | |
 | `pic17` | yaxpeax-pic17 | 🚧 | 🚧 | ❓ | |
