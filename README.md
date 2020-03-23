@@ -17,7 +17,7 @@ there are numerous architectures for which decoders are implemented, at varying 
 | architecture | library | decode | tests | benchmarks | note |
 | ------------ | ------- | ------ | ----- | ---------- | ---- |
 | `x86_64` | yaxpeax-x86 | ⚠️| 🚧 | 🚧 | incomplete operand decoding, may incorrectly accept long instructions |
-| `x86:32` | yaxpeax-x86 | ❓ | ❓ | ❓ | should share most but not all implementation with `x86_64` |
+| `x86:32` | yaxpeax-x86 | ❓ | ❓ | ❓ | see `yaxpeax-x86`'s module, `protected_mode`. incomplete opcode support, may incorrectly accept long instructions |
 | `x86:16` | yaxpeax-x86 | ❓ | ❓ | ❓ | should share most but not all implementation with `x86:32` |
 | `armv7` | yaxpeax-arm | 🚧 | 🚧 | ❓ | |
 | `armv8` | yaxpeax-arm | 🚧 | 🚧 | ❓ | |
