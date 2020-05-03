@@ -10,17 +10,227 @@ use num_traits::{Bounded, WrappingAdd, WrappingSub, CheckedAdd, CheckedSub};
 #[cfg(feature="use-serde")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature="use-serde")]
+pub trait AddressDiffAmount: Copy + Clone + PartialEq + PartialOrd + Eq + Ord + identities::Zero + identities::One + Serialize + for<'de> Deserialize<'de> {}
+#[cfg(not(feature="use-serde"))]
+pub trait AddressDiffAmount: Copy + Clone + PartialEq + PartialOrd + Eq + Ord + identities::Zero + identities::One {}
+
+impl AddressDiffAmount for u64 {}
+impl AddressDiffAmount for u32 {}
+impl AddressDiffAmount for u16 {}
+impl AddressDiffAmount for usize {}
+
+/// a struct describing the differece between some pair of `A: Address`. this is primarily useful
+/// in describing the size of an instruction, or the relative offset of a branch.
+///
+/// for any address type `A`, the following must hold:
+/// ```rust
+/// use yaxpeax_arch::AddressBase;
+/// fn diff_check<A: AddressBase + core::fmt::Debug>(left: A, right: A) {
+///     let diff = left.diff(&right);
+///     if let Some(offset) = diff {
+///         assert_eq!(left.wrapping_offset(offset), right);
+///     }
+/// }
+/// ```
+///
+/// which is to say, `yaxpeax` assumes associativity holds when `diff` yields a `Some`.
+#[cfg(feature="use-serde")]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Serialize, Deserialize)]
+pub struct AddressDiff<T: AddressDiffAmount> {
+    // the AddressDiffAmount trait fools `Deserialize`'s proc macro, so we have to explicitly write
+    // the bound serde should use.
+    #[serde(bound(deserialize = "T: AddressDiffAmount"))]
+    amount: T,
+}
+/// a struct describing the differece between some pair of `A: Address`. this is primarily useful
+/// in describing the size of an instruction, or the relative offset of a branch.
+///
+/// for any address type `A`, the following must hold:
+/// ```rust
+/// use yaxpeax_arch::AddressBase;
+/// fn diff_check<A: AddressBase + core::fmt::Debug>(left: A, right: A) {
+///     let diff = left.diff(&right);
+///     if let Some(offset) = diff {
+///         assert_eq!(left.wrapping_offset(offset), right);
+///     }
+/// }
+/// ```
+///
+/// which is to say, `yaxpeax` assumes associativity holds when `diff` yields a `Some`.
+#[cfg(not(feature="use-serde"))]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord)]
+pub struct AddressDiff<T: AddressDiffAmount> {
+    amount: T,
+}
+
+impl<T: AddressDiffAmount> AddressDiff<T> {
+    pub fn from_const(amount: T) -> Self {
+        AddressDiff { amount }
+    }
+}
+
+impl<T: AddressDiffAmount + fmt::Debug> fmt::Debug for AddressDiff<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "AddressDiff({:?})", self.amount)
+    }
+}
+
+impl<T: AddressDiffAmount> AddressDiff<T> {
+    pub fn one() -> Self {
+        AddressDiff {
+            amount: T::one(),
+        }
+    }
+
+    pub fn zero() -> Self {
+        AddressDiff {
+            amount: T::zero(),
+        }
+    }
+}
+
+impl Sub<AddressDiff<u16>> for u16 {
+    type Output = Self;
+
+    fn sub(self, other: AddressDiff<Self>) -> Self::Output {
+        self - other.amount
+    }
+}
+
+impl Sub<AddressDiff<u32>> for u32 {
+    type Output = Self;
+
+    fn sub(self, other: AddressDiff<Self>) -> Self::Output {
+        self - other.amount
+    }
+}
+
+impl Sub<AddressDiff<u64>> for u64 {
+    type Output = Self;
+
+    fn sub(self, other: AddressDiff<Self>) -> Self::Output {
+        self - other.amount
+    }
+}
+
+impl Sub<AddressDiff<usize>> for usize {
+    type Output = Self;
+
+    fn sub(self, other: AddressDiff<Self>) -> Self::Output {
+        self - other.amount
+    }
+}
+
+impl Add<AddressDiff<u16>> for u16 {
+    type Output = Self;
+
+    fn add(self, other: AddressDiff<Self>) -> Self::Output {
+        self + other.amount
+    }
+}
+
+impl Add<AddressDiff<u32>> for u32 {
+    type Output = Self;
+
+    fn add(self, other: AddressDiff<Self>) -> Self::Output {
+        self + other.amount
+    }
+}
+
+impl Add<AddressDiff<u64>> for u64 {
+    type Output = Self;
+
+    fn add(self, other: AddressDiff<Self>) -> Self::Output {
+        self + other.amount
+    }
+}
+
+impl Add<AddressDiff<usize>> for usize {
+    type Output = Self;
+
+    fn add(self, other: AddressDiff<Self>) -> Self::Output {
+        self + other.amount
+    }
+}
+
+impl SubAssign<AddressDiff<u16>> for u16 {
+    fn sub_assign(&mut self, other: AddressDiff<Self>) {
+        *self -= other.amount;
+    }
+}
+
+impl SubAssign<AddressDiff<u32>> for u32 {
+    fn sub_assign(&mut self, other: AddressDiff<Self>) {
+        *self -= other.amount;
+    }
+}
+
+impl SubAssign<AddressDiff<u64>> for u64 {
+    fn sub_assign(&mut self, other: AddressDiff<Self>) {
+        *self -= other.amount;
+    }
+}
+
+impl SubAssign<AddressDiff<usize>> for usize {
+    fn sub_assign(&mut self, other: AddressDiff<Self>) {
+        *self -= other.amount;
+    }
+}
+
+impl AddAssign<AddressDiff<u16>> for u16 {
+    fn add_assign(&mut self, other: AddressDiff<Self>) {
+        *self += other.amount;
+    }
+}
+
+impl AddAssign<AddressDiff<u32>> for u32 {
+    fn add_assign(&mut self, other: AddressDiff<Self>) {
+        *self += other.amount;
+    }
+}
+
+impl AddAssign<AddressDiff<u64>> for u64 {
+    fn add_assign(&mut self, other: AddressDiff<Self>) {
+        *self += other.amount;
+    }
+}
+
+impl AddAssign<AddressDiff<usize>> for usize {
+    fn add_assign(&mut self, other: AddressDiff<Self>) {
+        *self += other.amount;
+    }
+}
+
 pub trait AddressBase where Self:
     AddressDisplay +
     Copy + Clone + Sized + Hash +
     Ord + Eq + PartialEq + Bounded +
-    Add<Output=Self> + Sub<Output=Self> +
-    AddAssign + SubAssign +
+    Add<AddressDiff<Self>, Output=Self> + Sub<AddressDiff<Self>, Output=Self> +
+    AddAssign<AddressDiff<Self>> + SubAssign<AddressDiff<Self>> +
     WrappingAdd + WrappingSub +
     CheckedAdd + CheckedSub +
-    Hash +
-    identities::One + identities::Zero {
+    identities::Zero +
+    AddressDiffAmount +
+    Hash {
     fn to_linear(&self) -> usize;
+
+    /// compute the `AddressDiff` beetween `self` and `other`.
+    ///
+    /// may return `None` if the two addresses aren't comparable. for example, if a pair of
+    /// addresses are a data-space address and code-space address, there may be no scalar that can
+    /// describe the difference between them.
+    fn diff(&self, other: &Self) -> Option<AddressDiff<Self>> {
+        Some(AddressDiff { amount: self.wrapping_sub(other) })
+    }
+
+    fn wrapping_offset(&self, other: AddressDiff<Self>) -> Self {
+        self.wrapping_add(&other.amount)
+    }
+
+    fn checked_offset(&self, other: AddressDiff<Self>) -> Option<Self> {
+        self.checked_add(&other.amount)
+    }
 }
 
 #[cfg(all(feature="use-serde", feature="address-parse"))]

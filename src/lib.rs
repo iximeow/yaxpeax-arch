@@ -10,6 +10,8 @@ use core::hash::Hash;
 extern crate num_traits;
 #[cfg(feature="use-serde")]
 extern crate serde;
+#[cfg(feature="use-serde")]
+#[macro_use] extern crate serde_derive;
 #[cfg(feature="colors")]
 extern crate termion;
 
@@ -17,7 +19,7 @@ extern crate termion;
 use serde::{Serialize, Deserialize};
 
 mod address;
-pub use address::{Address, AddressBase, AddressDisplay};
+pub use address::{Address, AddressBase, AddressDiff, AddressDiffAmount, AddressDisplay};
 pub use address::{AddressDisplayUsize, AddressDisplayU64, AddressDisplayU32, AddressDisplayU16};
 #[cfg(feature="address-parse")]
 pub use address::AddrParse;
@@ -50,7 +52,7 @@ pub trait Decoder<Inst> where Inst: Sized + Default {
 #[cfg(feature="use-serde")]
 pub trait Arch {
     type Address: Address + Debug + Hash + PartialEq + Eq + Serialize + for<'de> Deserialize<'de>;
-    type Instruction: Instruction + LengthedInstruction<Unit=Self::Address> + Debug + Default;
+    type Instruction: Instruction + LengthedInstruction<Unit=AddressDiff<Self::Address>> + Debug + Default;
     type DecodeError: DecodeError + Debug + Display;
     type Decoder: Decoder<Self::Instruction, Error=Self::DecodeError> + Default;
     type Operand;
@@ -59,7 +61,7 @@ pub trait Arch {
 #[cfg(not(feature="use-serde"))]
 pub trait Arch {
     type Address: Address + Debug + Hash + PartialEq + Eq;
-    type Instruction: Instruction + LengthedInstruction<Unit=Self::Address> + Debug + Default;
+    type Instruction: Instruction + LengthedInstruction<Unit=AddressDiff<Self::Address>> + Debug + Default;
     type DecodeError: DecodeError + Debug + Display;
     type Decoder: Decoder<Self::Instruction, Error=Self::DecodeError> + Default;
     type Operand;

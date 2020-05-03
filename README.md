@@ -35,4 +35,4 @@ the canonical copy of `yaxpeax-arch` is at [https://git.iximeow.net/yaxpeax-arch
 `yaxpeax-arch` is also mirrored on GitHub at [https://www.github.com/iximeow/yaxpeax-x86](https://www.github.com/iximeow/yaxpeax-arch).
 
 ### ! user beware !
-these interfaces will almost certainly move and change. the version number is `0.0.1` and i mean it with every fiber of my being.
+these interfaces will almost certainly move and change. the version number is `0.0.4` and i mean it with every fiber of my being.

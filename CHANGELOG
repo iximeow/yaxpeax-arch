@@ -1,0 +1,17 @@
+## 0.0.4
+
+add `AddressDiff`. `LengthedInstruction::len` now return `AddressDiff`. the length of an instruction is the difference between two addresses, not itself an address.
+
+## 0.0.3
+
+`ColorSettings` gets a default impl
+
+## 0.0.2
+
+add `AddressDisplay` to provide a usable interface to display `Address` implementors.
+
+at the same time, remove `Address::stringy()`. it was a very bad interface, and will not be missed.
+
+## 0.0.1
+
+history starts here
