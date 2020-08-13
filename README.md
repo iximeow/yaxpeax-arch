@@ -16,8 +16,8 @@ there are numerous architectures for which decoders are implemented, at varying 
 
 | architecture | library | decode | tests | benchmarks | note |
 | ------------ | ------- | ------ | ----- | ---------- | ---- |
-| `x86_64` | yaxpeax-x86 | ⚠️| 🚧 | 🚧 | incomplete operand decoding, may incorrectly accept long instructions |
-| `x86:32` | yaxpeax-x86 | ❓ | ❓ | ❓ | see `yaxpeax-x86`'s module, `protected_mode`. incomplete opcode support, may incorrectly accept long instructions |
+| `x86_64` | yaxpeax-x86 | 🥳 | 🥳 | 🚧 | avx2, avx512, and some newer extensions unsupported |
+| `x86:32` | yaxpeax-x86 | 🥳 | 🥳 | ❓ | avx2, avx512, and some newer extensions unsupported |
 | `x86:16` | yaxpeax-x86 | ❓ | ❓ | ❓ | should share most but not all implementation with `x86:32` |
 | `armv7` | yaxpeax-arm | 🚧 | 🚧 | ❓ | |
 | `armv8` | yaxpeax-arm | 🚧 | 🚧 | ❓ | |
@@ -32,7 +32,7 @@ there are numerous architectures for which decoders are implemented, at varying 
 
 the canonical copy of `yaxpeax-arch` is at [https://git.iximeow.net/yaxpeax-arch](https://git.iximeow.net/yaxpeax-arch).
 
-`yaxpeax-arch` is also mirrored on GitHub at [https://www.github.com/iximeow/yaxpeax-x86](https://www.github.com/iximeow/yaxpeax-arch).
+`yaxpeax-arch` is also mirrored on GitHub at [https://www.github.com/iximeow/yaxpeax-arch](https://www.github.com/iximeow/yaxpeax-arch).
 
 ### ! user beware !
 these interfaces will almost certainly move and change. the version number is `0.0.4` and i mean it with every fiber of my being.
