@@ -29,6 +29,7 @@ there are numerous architectures for which decoders are implemented, at varying 
 | `pic18` | [yaxpeax-pic18](../yaxpeax-pic18) | 🚧 | 🚧 | ❓ | |
 | `pic24` | [yaxpeax-pic24](../yaxpeax-pic24) | ❓ | ❓ | ❓ | exists, but only decodes `NOP` |
 | `sm83` | [yaxpeax-sm83](../yaxpeax-sm83) | 🥳 | 🚧 | ❓ | |
+| `avr` | [yaxpeax-avr](https://github.com/The6P4C/yaxpeax-avr) | 🥳 | 🚧 | ❓ | contributed by [@the6p4c](https://twitter.com/The6P4C)! |
 
 ### mirrors
 
