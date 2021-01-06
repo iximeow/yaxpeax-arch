@@ -30,6 +30,7 @@ there are numerous architectures for which decoders are implemented, at varying 
 | `pic24` | [yaxpeax-pic24](https://www.github.com/iximeow/yaxpeax-pic24) | ❓ | ❓ | ❓ | exists, but only decodes `NOP` |
 | `sm83` | [yaxpeax-sm83](https://www.github.com/iximeow/yaxpeax-sm83) | 🥳 | 🚧 | ❓ | |
 | `avr` | [yaxpeax-avr](https://github.com/The6P4C/yaxpeax-avr) | 🥳 | 🚧 | ❓ | contributed by [@the6p4c](https://twitter.com/The6P4C)! |
+| `sh`/`sh2`/`j2`/`sh3`/`sh4` | [yaxpeax-superh](https://git.sr.ht/~nabijaczleweli/yaxpeax-superh) | 🥳 | 🚧 | ❓ | contributed by [наб](https://nabijaczleweli.xyz) |
 
 ### mirrors
 
