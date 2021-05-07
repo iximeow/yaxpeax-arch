@@ -17,7 +17,7 @@ pub enum NumberStyleHint {
     HexUnsignedWithSign
 }
 
-pub fn format_number_i32<W: fmt::Write, Color: fmt::Display, Y: YaxColors<Color>>(colors: &Y, f: &mut W, i: i32, hint: NumberStyleHint) -> fmt::Result {
+pub fn format_number_i32<W: fmt::Write, Y: YaxColors>(colors: &Y, f: &mut W, i: i32, hint: NumberStyleHint) -> fmt::Result {
     match hint {
         NumberStyleHint::Signed => {
             write!(f, "{}", colors.number(i))

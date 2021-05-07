@@ -1,15 +1,19 @@
 use core::fmt::{self, Display, Formatter};
+#[cfg(feature="colors")]
+use crossterm::style;
 
-pub enum Colored<T: Display, Colorer: Display> {
-    Color(T, Colorer, Colorer),
+#[cfg(feature="colors")]
+pub enum Colored<T: Display> {
+    Color(T, style::Color),
     Just(T)
 }
 
-impl <T: Display, Colorer: Display> Display for Colored<T, Colorer> {
+#[cfg(feature="colors")]
+impl <T: Display> Display for Colored<T> {
     fn fmt(&self, fmt: &mut Formatter) -> fmt::Result {
         match self {
-            Colored::Color(t, before, after) => {
-                write!(fmt, "{}{}{}", before, t, after)
+            Colored::Color(t, before) => {
+                write!(fmt, "{}", style::style(t).with(*before))
             },
             Colored::Just(t) => {
                 write!(fmt, "{}", t)
@@ -18,92 +22,108 @@ impl <T: Display, Colorer: Display> Display for Colored<T, Colorer> {
     }
 }
 
-pub trait YaxColors<Color: Display> {
-    fn arithmetic_op<T: Display>(&self, t: T) -> Colored<T, Color>;
-    fn stack_op<T: Display>(&self, t: T) -> Colored<T, Color>;
-    fn nop_op<T: Display>(&self, t: T) -> Colored<T, Color>;
-    fn stop_op<T: Display>(&self, t: T) -> Colored<T, Color>;
-    fn control_flow_op<T: Display>(&self, t: T) -> Colored<T, Color>;
-    fn data_op<T: Display>(&self, t: T) -> Colored<T, Color>;
-    fn comparison_op<T: Display>(&self, t: T) -> Colored<T, Color>;
-    fn invalid_op<T: Display>(&self, t: T) -> Colored<T, Color>;
-    fn platform_op<T: Display>(&self, t: T) -> Colored<T, Color>;
-    fn misc_op<T: Display>(&self, t: T) -> Colored<T, Color>;
+#[cfg(not(feature="colors"))]
+pub enum Colored<T: Display> {
+    Just(T)
+}
 
-    fn register<T: Display>(&self, t: T) -> Colored<T, Color>;
-    fn program_counter<T: Display>(&self, t: T) -> Colored<T, Color>;
-    fn number<T: Display>(&self, t: T) -> Colored<T, Color>;
-    fn zero<T: Display>(&self, t: T) -> Colored<T, Color>;
-    fn one<T: Display>(&self, t: T) -> Colored<T, Color>;
-    fn minus_one<T: Display>(&self, t: T) -> Colored<T, Color>;
-    fn address<T: Display>(&self, t: T) -> Colored<T, Color>;
-    fn symbol<T: Display>(&self, t: T) -> Colored<T, Color>;
-    fn function<T: Display>(&self, t: T) -> Colored<T, Color>;
+#[cfg(not(feature="colors"))]
+impl <T: Display> Display for Colored<T> {
+    fn fmt(&self, fmt: &mut Formatter) -> fmt::Result {
+        match self {
+            Colored::Just(t) => {
+                write!(fmt, "{}", t)
+            }
+        }
+    }
+}
+
+pub trait YaxColors {
+    fn arithmetic_op<T: Display>(&self, t: T) -> Colored<T>;
+    fn stack_op<T: Display>(&self, t: T) -> Colored<T>;
+    fn nop_op<T: Display>(&self, t: T) -> Colored<T>;
+    fn stop_op<T: Display>(&self, t: T) -> Colored<T>;
+    fn control_flow_op<T: Display>(&self, t: T) -> Colored<T>;
+    fn data_op<T: Display>(&self, t: T) -> Colored<T>;
+    fn comparison_op<T: Display>(&self, t: T) -> Colored<T>;
+    fn invalid_op<T: Display>(&self, t: T) -> Colored<T>;
+    fn platform_op<T: Display>(&self, t: T) -> Colored<T>;
+    fn misc_op<T: Display>(&self, t: T) -> Colored<T>;
+
+    fn register<T: Display>(&self, t: T) -> Colored<T>;
+    fn program_counter<T: Display>(&self, t: T) -> Colored<T>;
+    fn number<T: Display>(&self, t: T) -> Colored<T>;
+    fn zero<T: Display>(&self, t: T) -> Colored<T>;
+    fn one<T: Display>(&self, t: T) -> Colored<T>;
+    fn minus_one<T: Display>(&self, t: T) -> Colored<T>;
+    fn address<T: Display>(&self, t: T) -> Colored<T>;
+    fn symbol<T: Display>(&self, t: T) -> Colored<T>;
+    fn function<T: Display>(&self, t: T) -> Colored<T>;
 }
 
 pub struct NoColors;
 
-impl YaxColors<&'static str> for NoColors {
-    fn arithmetic_op<T: Display>(&self, t: T) -> Colored<T, &'static str> {
+impl YaxColors for NoColors {
+    fn arithmetic_op<T: Display>(&self, t: T) -> Colored<T> {
         Colored::Just(t)
     }
-    fn stack_op<T: Display>(&self, t: T) -> Colored<T, &'static str> {
+    fn stack_op<T: Display>(&self, t: T) -> Colored<T> {
         Colored::Just(t)
     }
-    fn nop_op<T: Display>(&self, t: T) -> Colored<T, &'static str> {
+    fn nop_op<T: Display>(&self, t: T) -> Colored<T> {
         Colored::Just(t)
     }
-    fn stop_op<T: Display>(&self, t: T) -> Colored<T, &'static str> {
+    fn stop_op<T: Display>(&self, t: T) -> Colored<T> {
         Colored::Just(t)
     }
-    fn control_flow_op<T: Display>(&self, t: T) -> Colored<T, &'static str> {
+    fn control_flow_op<T: Display>(&self, t: T) -> Colored<T> {
         Colored::Just(t)
     }
-    fn data_op<T: Display>(&self, t: T) -> Colored<T, &'static str> {
+    fn data_op<T: Display>(&self, t: T) -> Colored<T> {
         Colored::Just(t)
     }
-    fn comparison_op<T: Display>(&self, t: T) -> Colored<T, &'static str> {
+    fn comparison_op<T: Display>(&self, t: T) -> Colored<T> {
         Colored::Just(t)
     }
-    fn invalid_op<T: Display>(&self, t: T) -> Colored<T, &'static str> {
+    fn invalid_op<T: Display>(&self, t: T) -> Colored<T> {
         Colored::Just(t)
     }
-    fn platform_op<T: Display>(&self, t: T) -> Colored<T, &'static str> {
+    fn platform_op<T: Display>(&self, t: T) -> Colored<T> {
         Colored::Just(t)
     }
-    fn misc_op<T: Display>(&self, t: T) -> Colored<T, &'static str> {
+    fn misc_op<T: Display>(&self, t: T) -> Colored<T> {
         Colored::Just(t)
     }
-    fn register<T: Display>(&self, t: T) -> Colored<T, &'static str> {
+    fn register<T: Display>(&self, t: T) -> Colored<T> {
         Colored::Just(t)
     }
-    fn program_counter<T: Display>(&self, t: T) -> Colored<T, &'static str> {
+    fn program_counter<T: Display>(&self, t: T) -> Colored<T> {
         Colored::Just(t)
     }
-    fn number<T: Display>(&self, t: T) -> Colored<T, &'static str> {
+    fn number<T: Display>(&self, t: T) -> Colored<T> {
         Colored::Just(t)
     }
-    fn zero<T: Display>(&self, t: T) -> Colored<T, &'static str> {
+    fn zero<T: Display>(&self, t: T) -> Colored<T> {
         Colored::Just(t)
     }
-    fn one<T: Display>(&self, t: T) -> Colored<T, &'static str> {
+    fn one<T: Display>(&self, t: T) -> Colored<T> {
         Colored::Just(t)
     }
-    fn minus_one<T: Display>(&self, t: T) -> Colored<T, &'static str> {
+    fn minus_one<T: Display>(&self, t: T) -> Colored<T> {
         Colored::Just(t)
     }
-    fn address<T: Display>(&self, t: T) -> Colored<T, &'static str> {
+    fn address<T: Display>(&self, t: T) -> Colored<T> {
         Colored::Just(t)
     }
-    fn symbol<T: Display>(&self, t: T) -> Colored<T, &'static str> {
+    fn symbol<T: Display>(&self, t: T) -> Colored<T> {
         Colored::Just(t)
     }
-    fn function<T: Display>(&self, t: T) -> Colored<T, &'static str> {
+    fn function<T: Display>(&self, t: T) -> Colored<T> {
         Colored::Just(t)
     }
 }
 
-pub trait Colorize<T: fmt::Write, Color: Display, Y: YaxColors<Color> + ?Sized> {
+pub trait Colorize<T: fmt::Write, Y: YaxColors + ?Sized> {
     fn colorize(&self, colors: &Y, out: &mut T) -> fmt::Result;
 }
 
@@ -114,7 +134,8 @@ pub use termion_color::ColorSettings;
 mod termion_color {
     use core::fmt::Display;
 
-    use termion::color;
+    use crossterm::style;
+
     use serde::Serialize;
 
     use crate::color::{Colored, YaxColors};
@@ -129,231 +150,231 @@ mod termion_color {
     }
 
     pub struct ColorSettings {
-        arithmetic: color::Fg<&'static dyn color::Color>,
-        stack: color::Fg<&'static dyn color::Color>,
-        nop: color::Fg<&'static dyn color::Color>,
-        stop: color::Fg<&'static dyn color::Color>,
-        control: color::Fg<&'static dyn color::Color>,
-        data: color::Fg<&'static dyn color::Color>,
-        comparison: color::Fg<&'static dyn color::Color>,
-        invalid: color::Fg<&'static dyn color::Color>,
-        platform: color::Fg<&'static dyn color::Color>,
-        misc: color::Fg<&'static dyn color::Color>,
+        arithmetic: style::Color,
+        stack: style::Color,
+        nop: style::Color,
+        stop: style::Color,
+        control: style::Color,
+        data: style::Color,
+        comparison: style::Color,
+        invalid: style::Color,
+        platform: style::Color,
+        misc: style::Color,
 
-        register: color::Fg<&'static dyn color::Color>,
-        program_counter: color::Fg<&'static dyn color::Color>,
+        register: style::Color,
+        program_counter: style::Color,
 
-        number: color::Fg<&'static dyn color::Color>,
-        zero: color::Fg<&'static dyn color::Color>,
-        one: color::Fg<&'static dyn color::Color>,
-        minus_one: color::Fg<&'static dyn color::Color>,
+        number: style::Color,
+        zero: style::Color,
+        one: style::Color,
+        minus_one: style::Color,
 
-        function: color::Fg<&'static dyn color::Color>,
-        symbol: color::Fg<&'static dyn color::Color>,
-        address: color::Fg<&'static dyn color::Color>,
+        function: style::Color,
+        symbol: style::Color,
+        address: style::Color,
     }
 
     impl Default for ColorSettings {
         fn default() -> ColorSettings {
             ColorSettings {
-                arithmetic: color::Fg(&color::LightYellow),
-                stack: color::Fg(&color::Magenta),
-                nop: color::Fg(&color::Blue),
-                stop: color::Fg(&color::LightRed),
-                control: color::Fg(&color::Green),
-                data: color::Fg(&color::LightMagenta),
-                comparison: color::Fg(&color::Yellow),
-                invalid: color::Fg(&color::Red),
-                platform: color::Fg(&color::Cyan),
-                misc: color::Fg(&color::LightCyan),
+                arithmetic: style::Color::Yellow,
+                stack: style::Color::DarkMagenta,
+                nop: style::Color::DarkBlue,
+                stop: style::Color::Red,
+                control: style::Color::DarkGreen,
+                data: style::Color::Magenta,
+                comparison: style::Color::DarkYellow,
+                invalid: style::Color::DarkRed,
+                platform: style::Color::DarkCyan,
+                misc: style::Color::Cyan,
 
-                register: color::Fg(&color::Cyan),
-                program_counter: color::Fg(&color::Red),
+                register: style::Color::DarkCyan,
+                program_counter: style::Color::DarkRed,
 
-                number: color::Fg(&color::White),
-                zero: color::Fg(&color::White),
-                one: color::Fg(&color::White),
-                minus_one: color::Fg(&color::White),
+                number: style::Color::White,
+                zero: style::Color::White,
+                one: style::Color::White,
+                minus_one: style::Color::White,
 
-                function: color::Fg(&color::LightGreen),
-                symbol: color::Fg(&color::LightGreen),
-                address: color::Fg(&color::Green),
+                function: style::Color::Green,
+                symbol: style::Color::Green,
+                address: style::Color::DarkGreen,
             }
         }
     }
 
-    impl YaxColors<color::Fg<&'static dyn color::Color>> for ColorSettings {
-        fn arithmetic_op<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
-            Colored::Color(t, self.arithmetic, color::Fg(&color::Reset))
+    impl YaxColors for ColorSettings {
+        fn arithmetic_op<T: Display>(&self, t: T) -> Colored<T> {
+            Colored::Color(t, self.arithmetic)
         }
-        fn stack_op<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
-            Colored::Color(t, self.stack, color::Fg(&color::Reset))
+        fn stack_op<T: Display>(&self, t: T) -> Colored<T> {
+            Colored::Color(t, self.stack)
         }
-        fn nop_op<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
-            Colored::Color(t, self.nop, color::Fg(&color::Reset))
+        fn nop_op<T: Display>(&self, t: T) -> Colored<T> {
+            Colored::Color(t, self.nop)
         }
-        fn stop_op<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
-            Colored::Color(t, self.stop, color::Fg(&color::Reset))
+        fn stop_op<T: Display>(&self, t: T) -> Colored<T> {
+            Colored::Color(t, self.stop)
         }
-        fn control_flow_op<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
-            Colored::Color(t, self.control, color::Fg(&color::Reset))
+        fn control_flow_op<T: Display>(&self, t: T) -> Colored<T> {
+            Colored::Color(t, self.control)
         }
-        fn data_op<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
-            Colored::Color(t, self.data, color::Fg(&color::Reset))
+        fn data_op<T: Display>(&self, t: T) -> Colored<T> {
+            Colored::Color(t, self.data)
         }
-        fn comparison_op<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
-            Colored::Color(t, self.comparison, color::Fg(&color::Reset))
+        fn comparison_op<T: Display>(&self, t: T) -> Colored<T> {
+            Colored::Color(t, self.comparison)
         }
-        fn invalid_op<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
-            Colored::Color(t, self.invalid, color::Fg(&color::Reset))
+        fn invalid_op<T: Display>(&self, t: T) -> Colored<T> {
+            Colored::Color(t, self.invalid)
         }
-        fn misc_op<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
-            Colored::Color(t, self.misc, color::Fg(&color::Reset))
+        fn misc_op<T: Display>(&self, t: T) -> Colored<T> {
+            Colored::Color(t, self.misc)
         }
-        fn platform_op<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
-            Colored::Color(t, self.platform, color::Fg(&color::Reset))
+        fn platform_op<T: Display>(&self, t: T) -> Colored<T> {
+            Colored::Color(t, self.platform)
         }
 
-        fn register<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
-            Colored::Color(t, self.register, color::Fg(&color::Reset))
+        fn register<T: Display>(&self, t: T) -> Colored<T> {
+            Colored::Color(t, self.register)
         }
-        fn program_counter<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
-            Colored::Color(t, self.program_counter, color::Fg(&color::Reset))
+        fn program_counter<T: Display>(&self, t: T) -> Colored<T> {
+            Colored::Color(t, self.program_counter)
         }
-        fn number<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
-            Colored::Color(t, self.number, color::Fg(&color::Reset))
+        fn number<T: Display>(&self, t: T) -> Colored<T> {
+            Colored::Color(t, self.number)
         }
-        fn zero<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
-            Colored::Color(t, self.zero, color::Fg(&color::Reset))
+        fn zero<T: Display>(&self, t: T) -> Colored<T> {
+            Colored::Color(t, self.zero)
         }
-        fn one<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
-            Colored::Color(t, self.one, color::Fg(&color::Reset))
+        fn one<T: Display>(&self, t: T) -> Colored<T> {
+            Colored::Color(t, self.one)
         }
-        fn minus_one<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
-            Colored::Color(t, self.minus_one, color::Fg(&color::Reset))
+        fn minus_one<T: Display>(&self, t: T) -> Colored<T> {
+            Colored::Color(t, self.minus_one)
         }
-        fn address<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
-            Colored::Color(t, self.address, color::Fg(&color::Reset))
+        fn address<T: Display>(&self, t: T) -> Colored<T> {
+            Colored::Color(t, self.address)
         }
-        fn symbol<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
-            Colored::Color(t, self.symbol, color::Fg(&color::Reset))
+        fn symbol<T: Display>(&self, t: T) -> Colored<T> {
+            Colored::Color(t, self.symbol)
         }
-        fn function<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
-            Colored::Color(t, self.function, color::Fg(&color::Reset))
+        fn function<T: Display>(&self, t: T) -> Colored<T> {
+            Colored::Color(t, self.function)
         }
     }
 
-    impl <'a> YaxColors<color::Fg<&'static dyn color::Color>>for Option<&'a ColorSettings> {
-        fn arithmetic_op<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
+    impl <'a> YaxColors for Option<&'a ColorSettings> {
+        fn arithmetic_op<T: Display>(&self, t: T) -> Colored<T> {
             match self {
                 Some(colors) => { colors.arithmetic_op(t) }
                 None => { Colored::Just(t) }
             }
         }
-        fn stack_op<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
+        fn stack_op<T: Display>(&self, t: T) -> Colored<T> {
             match self {
                 Some(colors) => { colors.stack_op(t) }
                 None => { Colored::Just(t) }
             }
         }
-        fn nop_op<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
+        fn nop_op<T: Display>(&self, t: T) -> Colored<T> {
             match self {
                 Some(colors) => { colors.nop_op(t) }
                 None => { Colored::Just(t) }
             }
         }
-        fn stop_op<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
+        fn stop_op<T: Display>(&self, t: T) -> Colored<T> {
             match self {
                 Some(colors) => { colors.stop_op(t) }
                 None => { Colored::Just(t) }
             }
         }
-        fn control_flow_op<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
+        fn control_flow_op<T: Display>(&self, t: T) -> Colored<T> {
             match self {
                 Some(colors) => { colors.control_flow_op(t) }
                 None => { Colored::Just(t) }
             }
         }
-        fn data_op<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
+        fn data_op<T: Display>(&self, t: T) -> Colored<T> {
             match self {
                 Some(colors) => { colors.data_op(t) }
                 None => { Colored::Just(t) }
             }
         }
-        fn comparison_op<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
+        fn comparison_op<T: Display>(&self, t: T) -> Colored<T> {
             match self {
                 Some(colors) => { colors.comparison_op(t) }
                 None => { Colored::Just(t) }
             }
         }
-        fn invalid_op<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
+        fn invalid_op<T: Display>(&self, t: T) -> Colored<T> {
             match self {
                 Some(colors) => { colors.invalid_op(t) }
                 None => { Colored::Just(t) }
             }
         }
-        fn misc_op<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
+        fn misc_op<T: Display>(&self, t: T) -> Colored<T> {
             match self {
                 Some(colors) => { colors.misc_op(t) }
                 None => { Colored::Just(t) }
             }
         }
-        fn platform_op<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
+        fn platform_op<T: Display>(&self, t: T) -> Colored<T> {
             match self {
                 Some(colors) => { colors.platform_op(t) }
                 None => { Colored::Just(t) }
             }
         }
 
-        fn register<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
+        fn register<T: Display>(&self, t: T) -> Colored<T> {
             match self {
                 Some(colors) => { colors.register(t) }
                 None => { Colored::Just(t) }
             }
         }
-        fn program_counter<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
+        fn program_counter<T: Display>(&self, t: T) -> Colored<T> {
             match self {
                 Some(colors) => { colors.program_counter(t) }
                 None => { Colored::Just(t) }
             }
         }
-        fn number<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
+        fn number<T: Display>(&self, t: T) -> Colored<T> {
             match self {
                 Some(colors) => { colors.number(t) }
                 None => { Colored::Just(t) }
             }
         }
-        fn zero<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
+        fn zero<T: Display>(&self, t: T) -> Colored<T> {
             match self {
                 Some(colors) => { colors.zero(t) }
                 None => { Colored::Just(t) }
             }
         }
-        fn one<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
+        fn one<T: Display>(&self, t: T) -> Colored<T> {
             match self {
                 Some(colors) => { colors.one(t) }
                 None => { Colored::Just(t) }
             }
         }
-        fn minus_one<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
+        fn minus_one<T: Display>(&self, t: T) -> Colored<T> {
             match self {
                 Some(colors) => { colors.minus_one(t) }
                 None => { Colored::Just(t) }
             }
         }
-        fn address<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
+        fn address<T: Display>(&self, t: T) -> Colored<T> {
             match self {
                 Some(colors) => { colors.address(t) }
                 None => { Colored::Just(t) }
             }
         }
-        fn symbol<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
+        fn symbol<T: Display>(&self, t: T) -> Colored<T> {
             match self {
                 Some(colors) => { colors.symbol(t) }
                 None => { Colored::Just(t) }
             }
         }
-        fn function<T: Display>(&self, t: T) -> Colored<T, color::Fg<&'static dyn color::Color>> {
+        fn function<T: Display>(&self, t: T) -> Colored<T> {
             match self {
                 Some(colors) => { colors.function(t) }
                 None => { Colored::Just(t) }

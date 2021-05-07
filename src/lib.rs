@@ -13,7 +13,7 @@ extern crate serde;
 #[cfg(feature="use-serde")]
 #[macro_use] extern crate serde_derive;
 #[cfg(feature="colors")]
-extern crate termion;
+extern crate crossterm;
 
 #[cfg(feature="use-serde")]
 use serde::{Serialize, Deserialize};
@@ -77,7 +77,7 @@ pub trait Instruction {
     fn well_defined(&self) -> bool;
 }
 
-pub trait ShowContextual<Addr, Ctx: ?Sized, Color: Display, T: fmt::Write, Y: YaxColors<Color>> {
+pub trait ShowContextual<Addr, Ctx: ?Sized, T: fmt::Write, Y: YaxColors> {
     fn contextualize(&self, colors: &Y, address: Addr, context: Option<&Ctx>, out: &mut T) -> fmt::Result;
 }
 

@@ -1,3 +1,7 @@
+## 0.0.5
+
+swap the `termion` dependency for `crossterm`. this is motivated by improved cross-platform support (notably Windows) as well as removing a type parameter from `Colored` and `YaxColors`.
+
 ## 0.0.4
 
 add `AddressDiff`. `LengthedInstruction::len` now return `AddressDiff`. the length of an instruction is the difference between two addresses, not itself an address.
