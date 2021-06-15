@@ -5,7 +5,7 @@ use core::fmt;
 use core::ops::{Add, Sub, AddAssign, SubAssign};
 
 use num_traits::identities;
-use num_traits::{Bounded, WrappingAdd, WrappingSub, CheckedAdd, CheckedSub};
+use num_traits::{Bounded, WrappingAdd, WrappingSub, CheckedAdd, Zero, One};
 
 #[cfg(feature="use-serde")]
 use serde::{Deserialize, Serialize};
@@ -37,11 +37,11 @@ impl AddressDiffAmount for usize {}
 /// which is to say, `yaxpeax` assumes associativity holds when `diff` yields a `Some`.
 #[cfg(feature="use-serde")]
 #[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Serialize, Deserialize)]
-pub struct AddressDiff<T: AddressDiffAmount> {
+pub struct AddressDiff<T: AddressBase> {
     // the AddressDiffAmount trait fools `Deserialize`'s proc macro, so we have to explicitly write
     // the bound serde should use.
-    #[serde(bound(deserialize = "T: AddressDiffAmount"))]
-    amount: T,
+    #[serde(bound(deserialize = "T::Diff: AddressDiffAmount"))]
+    amount: T::Diff,
 }
 /// a struct describing the differece between some pair of `A: Address`. this is primarily useful
 /// in describing the size of an instruction, or the relative offset of a branch.
@@ -60,32 +60,32 @@ pub struct AddressDiff<T: AddressDiffAmount> {
 /// which is to say, `yaxpeax` assumes associativity holds when `diff` yields a `Some`.
 #[cfg(not(feature="use-serde"))]
 #[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord)]
-pub struct AddressDiff<T: AddressDiffAmount> {
-    amount: T,
+pub struct AddressDiff<T: AddressBase> {
+    amount: T::Diff,
 }
 
-impl<T: AddressDiffAmount> AddressDiff<T> {
-    pub fn from_const(amount: T) -> Self {
+impl<T: Address> AddressDiff<T> {
+    pub fn from_const(amount: T::Diff) -> Self {
         AddressDiff { amount }
     }
 }
 
-impl<T: AddressDiffAmount + fmt::Debug> fmt::Debug for AddressDiff<T> {
+impl<T: Address> fmt::Debug for AddressDiff<T> where T::Diff: fmt::Debug {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "AddressDiff({:?})", self.amount)
     }
 }
 
-impl<T: AddressDiffAmount> AddressDiff<T> {
+impl<T: Address> AddressDiff<T> {
     pub fn one() -> Self {
         AddressDiff {
-            amount: T::one(),
+            amount: <T as AddressBase>::Diff::one(),
         }
     }
 
     pub fn zero() -> Self {
         AddressDiff {
-            amount: T::zero(),
+            amount: <T as AddressBase>::Diff::zero(),
         }
     }
 }
@@ -208,11 +208,9 @@ pub trait AddressBase where Self:
     Ord + Eq + PartialEq + Bounded +
     Add<AddressDiff<Self>, Output=Self> + Sub<AddressDiff<Self>, Output=Self> +
     AddAssign<AddressDiff<Self>> + SubAssign<AddressDiff<Self>> +
-    WrappingAdd + WrappingSub +
-    CheckedAdd + CheckedSub +
     identities::Zero +
-    AddressDiffAmount +
     Hash {
+    type Diff: AddressDiffAmount;
     fn to_linear(&self) -> usize;
 
     /// compute the `AddressDiff` beetween `self` and `other`.
@@ -220,17 +218,26 @@ pub trait AddressBase where Self:
     /// may return `None` if the two addresses aren't comparable. for example, if a pair of
     /// addresses are a data-space address and code-space address, there may be no scalar that can
     /// describe the difference between them.
-    fn diff(&self, other: &Self) -> Option<AddressDiff<Self>> {
+    fn diff(&self, other: &Self) -> Option<AddressDiff<Self>>;
+    /*
+    {
         Some(AddressDiff { amount: self.wrapping_sub(other) })
     }
+    */
 
-    fn wrapping_offset(&self, other: AddressDiff<Self>) -> Self {
+    fn wrapping_offset(&self, other: AddressDiff<Self>) -> Self;
+    /*
+    {
         self.wrapping_add(&other.amount)
     }
+    */
 
-    fn checked_offset(&self, other: AddressDiff<Self>) -> Option<Self> {
+    fn checked_offset(&self, other: AddressDiff<Self>) -> Option<Self>;
+    /*
+    {
         self.checked_add(&other.amount)
     }
+    */
 }
 
 #[cfg(all(feature="use-serde", feature="address-parse"))]
@@ -255,25 +262,73 @@ pub trait Address where Self:
 pub trait Address where Self: AddressBase { }
 
 impl AddressBase for u16 {
+    type Diff = Self;
     fn to_linear(&self) -> usize { *self as usize }
+
+    fn diff(&self, other: &Self) -> Option<AddressDiff<Self>> {
+        Some(AddressDiff { amount: self.wrapping_sub(other) })
+    }
+    fn wrapping_offset(&self, other: AddressDiff<Self>) -> Self {
+        self.wrapping_add(&other.amount)
+    }
+
+    fn checked_offset(&self, other: AddressDiff<Self>) -> Option<Self> {
+        self.checked_add(&other.amount)
+    }
 }
 
 impl Address for u16 {}
 
 impl AddressBase for u32 {
+    type Diff = Self;
     fn to_linear(&self) -> usize { *self as usize }
+
+    fn diff(&self, other: &Self) -> Option<AddressDiff<Self>> {
+        Some(AddressDiff { amount: self.wrapping_sub(other) })
+    }
+    fn wrapping_offset(&self, other: AddressDiff<Self>) -> Self {
+        self.wrapping_add(&other.amount)
+    }
+
+    fn checked_offset(&self, other: AddressDiff<Self>) -> Option<Self> {
+        self.checked_add(&other.amount)
+    }
 }
 
 impl Address for u32 {}
 
 impl AddressBase for u64 {
+    type Diff = Self;
     fn to_linear(&self) -> usize { *self as usize }
+
+    fn diff(&self, other: &Self) -> Option<AddressDiff<Self>> {
+        Some(AddressDiff { amount: self.wrapping_sub(other) })
+    }
+    fn wrapping_offset(&self, other: AddressDiff<Self>) -> Self {
+        self.wrapping_add(&other.amount)
+    }
+
+    fn checked_offset(&self, other: AddressDiff<Self>) -> Option<Self> {
+        self.checked_add(&other.amount)
+    }
 }
 
 impl Address for u64 {}
 
 impl AddressBase for usize {
+    type Diff = Self;
     fn to_linear(&self) -> usize { *self }
+
+    fn diff(&self, other: &Self) -> Option<AddressDiff<Self>> {
+        Some(AddressDiff { amount: self.wrapping_sub(other) })
+    }
+    fn wrapping_offset(&self, other: AddressDiff<Self>) -> Self {
+        self.wrapping_add(&other.amount)
+    }
+
+    fn checked_offset(&self, other: AddressDiff<Self>) -> Option<Self> {
+        self.checked_add(&other.amount)
+    }
 }
 
 impl Address for usize {}
