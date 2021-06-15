@@ -38,32 +38,43 @@ pub trait DecodeError {
     fn bad_operand(&self) -> bool;
 }
 
-pub trait Decoder<Inst> where Inst: Sized + Default {
+pub enum ReadError {
+    ExhaustedInput,
+    IOError(&'static str),
+}
+
+pub trait Reader<Item> {
+    fn next(&mut self) -> Result<Item, ReadError>;
+}
+
+pub trait Decoder<A: Arch + ?Sized> {
     type Error: DecodeError + Debug + Display;
 
-    fn decode<T: IntoIterator<Item=u8>>(&self, bytes: T) -> Result<Inst, Self::Error> {
-        let mut inst = Inst::default();
+    fn decode<T: Reader<A::Word>>(&self, bytes: &mut T) -> Result<A::Instruction, Self::Error> {
+        let mut inst = A::Instruction::default();
         self.decode_into(&mut inst, bytes).map(|_: ()| inst)
     }
 
-    fn decode_into<T: IntoIterator<Item=u8>>(&self, inst: &mut Inst, bytes: T) -> Result<(), Self::Error>;
+    fn decode_into<T: Reader<A::Word>>(&self, inst: &mut A::Instruction, bytes: &mut T) -> Result<(), Self::Error>;
 }
 
 #[cfg(feature="use-serde")]
 pub trait Arch {
+    type Word: Debug + Display + PartialEq + Eq;
     type Address: Address + Debug + Hash + PartialEq + Eq + Serialize + for<'de> Deserialize<'de>;
-    type Instruction: Instruction + LengthedInstruction<Unit=AddressDiff<Self::Address>> + Debug + Default;
+    type Instruction: Instruction + LengthedInstruction<Unit=AddressDiff<Self::Address>> + Debug + Default + Sized;
     type DecodeError: DecodeError + Debug + Display;
-    type Decoder: Decoder<Self::Instruction, Error=Self::DecodeError> + Default;
+    type Decoder: Decoder<Self, Error=Self::DecodeError> + Default;
     type Operand;
 }
 
 #[cfg(not(feature="use-serde"))]
 pub trait Arch {
+    type Word: Debug + Display + PartialEq + Eq;
     type Address: Address + Debug + Hash + PartialEq + Eq;
-    type Instruction: Instruction + LengthedInstruction<Unit=AddressDiff<Self::Address>> + Debug + Default;
+    type Instruction: Instruction + LengthedInstruction<Unit=AddressDiff<Self::Address>> + Debug + Default + Sized;
     type DecodeError: DecodeError + Debug + Display;
-    type Decoder: Decoder<Self::Instruction, Error=Self::DecodeError> + Default;
+    type Decoder: Decoder<Self, Error=Self::DecodeError> + Default;
     type Operand;
 }
 
