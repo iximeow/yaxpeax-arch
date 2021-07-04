@@ -10,6 +10,17 @@ fn test_u16() {
 }
 
 #[test]
+fn generic_error_can_bail() {
+    use yaxpeax_arch::{Arch, Decoder, Reader};
+
+    #[allow(dead_code)]
+    fn decode<A: Arch, U: Into<impl Reader<A::Address, A::Word>>>(data: U, decoder: &A::Decoder) -> anyhow::Result<()> {
+        let mut reader = data.into();
+        decoder.decode(&mut reader)?;
+        Ok(())
+    }
+}
+#[test]
 fn error_can_bail() {
     use yaxpeax_arch::{Arch, AddressDiff, Decoder, Reader, LengthedInstruction, Instruction, StandardDecodeError, U8Reader};
     struct TestIsa {}

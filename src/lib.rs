@@ -30,7 +30,7 @@ pub use reader::{Reader, ReadError, U8Reader, U16le, U16be, U32le, U32be, U64le,
 /// it is permissible for an implementor of `DecodeError` to have items that return `false` for
 /// all these functions; decoders are permitted to error in way that `yaxpeax-arch` does not know
 /// about.
-pub trait DecodeError: PartialEq {
+pub trait DecodeError: PartialEq + Display + Debug + Send + Sync + 'static {
     /// did the decoder fail because it reached the end of input?
     fn data_exhausted(&self) -> bool;
     /// did the decoder error because the instruction's opcode is invalid?
@@ -157,9 +157,18 @@ impl<T> AddressBounds for T where T: Address + Debug + Hash + PartialEq + Eq + S
 impl<T> AddressBounds for T where T: Address + Debug + Hash + PartialEq + Eq {}
 
 #[cfg(feature = "std")]
-trait DecodeErrorBounds: DecodeError + std::error::Error + Debug + Display {}
+/// this is not a particularly interesting trait. it just exists to add a `std::error::Error`
+/// bound onto `DecodeError` for `std` builds.
+pub trait DecodeErrorBounds: std::error::Error + DecodeError {}
+#[cfg(feature = "std")]
+impl<T: std::error::Error + DecodeError> DecodeErrorBounds for T {}
 #[cfg(not(feature = "std"))]
-trait DecodeErrorBounds: DecodeError + Debug + Display {}
+/// this is not a particularly interesting trait. it just exists to add a `std::error::Error`
+/// bound onto `DecodeError` for `std` builds.
+pub trait DecodeErrorBounds: DecodeError {}
+#[cfg(not(feature = "std"))]
+impl<T: DecodeError> DecodeErrorBounds for T {}
+
 
 /// a collection of associated type parameters that constitute the definitions for an instruction
 /// set. `Arch` provides an `Instruction` and its associated `Operand`s, which is guaranteed to be
@@ -180,7 +189,7 @@ pub trait Arch {
     type Word: Debug + Display + PartialEq + Eq;
     type Address: AddressBounds;
     type Instruction: Instruction + LengthedInstruction<Unit=AddressDiff<Self::Address>> + Debug + Default + Sized;
-    type DecodeError: DecodeError + Debug + Display;
+    type DecodeError: DecodeErrorBounds + Debug + Display;
     type Decoder: Decoder<Self> + Default;
     type Operand;
 }
