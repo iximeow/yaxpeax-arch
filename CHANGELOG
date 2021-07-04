@@ -1,3 +1,7 @@
+## 0.2.1
+
+updated architecture matrix
+
 ## 0.2.0
 
 correct a bug in 0.1.0 that incorrectly bounded `DecodeError` and did not actually require `std::error::Error`. added a test that `std::error::Error` is actually required of `Arch::DecodeError` in non-std builds.

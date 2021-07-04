@@ -19,9 +19,9 @@ there are numerous architectures for which decoders are implemented, at varying 
 
 | architecture | library | decode | tests | benchmarks | note |
 | ------------ | ------- | ------ | ----- | ---------- | ---- |
-| `x86_64` | [yaxpeax-x86](https://www.github.com/iximeow/yaxpeax-x86) | 🥳 | 🥳 | 🚧 | avx2, avx512, and some newer extensions unsupported |
-| `x86:32` | [yaxpeax-x86](https://www.github.com/iximeow/yaxpeax-x86) | 🥳 | 🥳 | ❓ | avx2, avx512, and some newer extensions unsupported |
-| `x86:16` | [yaxpeax-x86](https://www.github.com/iximeow/yaxpeax-x86) | ❓ | ❓ | ❓ | should share most but not all implementation with `x86:32` |
+| `x86_64` | [yaxpeax-x86](https://www.github.com/iximeow/yaxpeax-x86) | 🥳 | 🥳 | 🥳 | |
+| `x86:32` | [yaxpeax-x86](https://www.github.com/iximeow/yaxpeax-x86) | 🥳 | 🥳 | ❓ | sse and sse2 support cannot be disabled |
+| `x86:16` | [yaxpeax-x86](https://www.github.com/iximeow/yaxpeax-x86) | 🥳 | 🥳 | ❓ | instructions above the 8086 or 286 cannot be disabled |
 | `ia64` | [yaxpeax-ia64](https://www.github.com/iximeow/yaxpeax-ia64) | 🥳 | ⚠️ | ❓ | lack of a good oracle has complicated testing |
 | `armv7` | [yaxpeax-arm](https://www.github.com/iximeow/yaxpeax-arm) | 🚧 | 🚧 | ❓ | NEON is not yet supported |
 | `armv8` | [yaxpeax-arm](https://www.github.com/iximeow/yaxpeax-arm) | 🚧 | 🚧 | ❓ | a32 decoding is not yet supported, NEON is not supported |
