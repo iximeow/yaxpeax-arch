@@ -38,17 +38,28 @@ pub trait DecodeError {
     fn bad_operand(&self) -> bool;
 }
 
-pub enum ReadError {
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum StandardDecodeError {
     ExhaustedInput,
-    IOError(&'static str),
+    InvalidOpcode,
+    InvalidOperand,
 }
 
-pub trait Reader<Item> {
-    fn next(&mut self) -> Result<Item, ReadError>;
+impl fmt::Display for StandardDecodeError {
+    fn fmt(&self, f:  &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            StandardDecodeError::ExhaustedInput => write!(f, "exhausted input"),
+            StandardDecodeError::InvalidOpcode => write!(f, "invalid opcode"),
+            StandardDecodeError::InvalidOperand => write!(f, "invalid operand"),
+        }
+    }
 }
 
-pub trait Decoder<A: Arch + ?Sized> {
-    type Error: DecodeError + Debug + Display;
+impl DecodeError for StandardDecodeError {
+    fn data_exhausted(&self) -> bool { *self == StandardDecodeError::ExhaustedInput }
+    fn bad_opcode(&self) -> bool { *self == StandardDecodeError::InvalidOpcode }
+    fn bad_operand(&self) -> bool { *self == StandardDecodeError::InvalidOperand }
+}
 
     fn decode<T: Reader<A::Word>>(&self, bytes: &mut T) -> Result<A::Instruction, Self::Error> {
         let mut inst = A::Instruction::default();
