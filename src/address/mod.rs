@@ -68,6 +68,9 @@ impl<T: Address> AddressDiff<T> {
     pub fn from_const(amount: T::Diff) -> Self {
         AddressDiff { amount }
     }
+    pub fn to_const(&self) -> T::Diff {
+        self.amount
+    }
 }
 
 impl<T: Address> fmt::Debug for AddressDiff<T> where T::Diff: fmt::Debug {
