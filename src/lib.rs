@@ -30,7 +30,7 @@ pub use reader::{Reader, ReadError, U8Reader, U16le, U16be, U32le, U32be, U64le,
 /// it is permissible for an implementor of `DecodeError` to have items that return `false` for
 /// all these functions; decoders are permitted to error in way that `yaxpeax-arch` does not know
 /// about.
-pub trait DecodeError {
+pub trait DecodeError: PartialEq {
     /// did the decoder fail because it reached the end of input?
     fn data_exhausted(&self) -> bool;
     /// did the decoder error because the instruction's opcode is invalid?
@@ -46,6 +46,8 @@ pub trait DecodeError {
     /// similar to [`DecodeError::bad_opcode`], this is a subjective distinction and best-effort on
     /// the part of implementors.
     fn bad_operand(&self) -> bool;
+    /// a human-friendly description of this decode error.
+    fn description(&self) -> &'static str;
 }
 
 /// a minimal enum implementing `DecodeError`. this is intended to be enough for a low effort,
@@ -57,13 +59,41 @@ pub enum StandardDecodeError {
     InvalidOperand,
 }
 
+/// a slightly less minimal enum `DecodeError`. similar to `StandardDecodeError`, this is an
+/// anti-boilerplate measure. it additionally provides `IncompleteDecoder`, making it suitable to
+/// represent error kinds for decoders that are ... not yet complete.
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum StandardPartialDecoderError {
+    ExhaustedInput,
+    InvalidOpcode,
+    InvalidOperand,
+    IncompleteDecoder,
+}
+
+#[cfg(feature = "std")]
+extern crate std;
+#[cfg(feature = "std")]
+impl std::error::Error for StandardDecodeError {
+    fn description(&self) -> &str {
+        <Self as DecodeError>::description(self)
+    }
+}
+#[cfg(feature = "std")]
+impl std::error::Error for StandardPartialDecoderError {
+    fn description(&self) -> &str {
+        <Self as DecodeError>::description(self)
+    }
+}
+
 impl fmt::Display for StandardDecodeError {
     fn fmt(&self, f:  &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            StandardDecodeError::ExhaustedInput => write!(f, "exhausted input"),
-            StandardDecodeError::InvalidOpcode => write!(f, "invalid opcode"),
-            StandardDecodeError::InvalidOperand => write!(f, "invalid operand"),
-        }
+        f.write_str(self.description())
+    }
+}
+
+impl fmt::Display for StandardPartialDecoderError {
+    fn fmt(&self, f:  &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(self.description())
     }
 }
 
@@ -71,6 +101,27 @@ impl DecodeError for StandardDecodeError {
     fn data_exhausted(&self) -> bool { *self == StandardDecodeError::ExhaustedInput }
     fn bad_opcode(&self) -> bool { *self == StandardDecodeError::InvalidOpcode }
     fn bad_operand(&self) -> bool { *self == StandardDecodeError::InvalidOperand }
+    fn description(&self) -> &'static str {
+        match self {
+            StandardDecodeError::ExhaustedInput => "exhausted input",
+            StandardDecodeError::InvalidOpcode => "invalid opcode",
+            StandardDecodeError::InvalidOperand => "invalid operand",
+        }
+    }
+}
+
+impl DecodeError for StandardPartialDecoderError {
+    fn data_exhausted(&self) -> bool { *self == StandardPartialDecoderError::ExhaustedInput }
+    fn bad_opcode(&self) -> bool { *self == StandardPartialDecoderError::InvalidOpcode }
+    fn bad_operand(&self) -> bool { *self == StandardPartialDecoderError::InvalidOperand }
+    fn description(&self) -> &'static str {
+        match self {
+            StandardPartialDecoderError::ExhaustedInput => "exhausted input",
+            StandardPartialDecoderError::InvalidOpcode => "invalid opcode",
+            StandardPartialDecoderError::InvalidOperand => "invalid operand",
+            StandardPartialDecoderError::IncompleteDecoder => "incomplete decoder",
+        }
+    }
 }
 
 /// an interface to decode [`Arch::Instruction`] words from a reader of [`Arch::Word`]s. errors are
@@ -95,6 +146,21 @@ pub trait Decoder<A: Arch + ?Sized> {
     fn decode_into<T: Reader<A::Address, A::Word>>(&self, inst: &mut A::Instruction, words: &mut T) -> Result<(), A::DecodeError>;
 }
 
+#[cfg(feature = "use-serde")]
+pub trait AddressBounds: Address + Debug + Hash + PartialEq + Eq + Serialize + for<'de> Deserialize<'de> {}
+#[cfg(not(feature = "use-serde"))]
+pub trait AddressBounds: Address + Debug + Hash + PartialEq + Eq {}
+
+#[cfg(feature = "use-serde")]
+impl<T> AddressBounds for T where T: Address + Debug + Hash + PartialEq + Eq + Serialize + for<'de> Deserialize<'de> {}
+#[cfg(not(feature = "use-serde"))]
+impl<T> AddressBounds for T where T: Address + Debug + Hash + PartialEq + Eq {}
+
+#[cfg(feature = "std")]
+trait DecodeErrorBounds: DecodeError + std::error::Error + Debug + Display {}
+#[cfg(not(feature = "std"))]
+trait DecodeErrorBounds: DecodeError + Debug + Display {}
+
 /// a collection of associated type parameters that constitute the definitions for an instruction
 /// set. `Arch` provides an `Instruction` and its associated `Operand`s, which is guaranteed to be
 /// decodable by this `Arch::Decoder`. `Arch::Decoder` can always be constructed with a `Default`
@@ -110,20 +176,9 @@ pub trait Decoder<A: Arch + ?Sized> {
 /// ```
 ///
 /// in some library built on top of `yaxpeax-arch`.
-#[cfg(feature="use-serde")]
 pub trait Arch {
     type Word: Debug + Display + PartialEq + Eq;
-    type Address: Address + Debug + Hash + PartialEq + Eq + Serialize + for<'de> Deserialize<'de>;
-    type Instruction: Instruction + LengthedInstruction<Unit=AddressDiff<Self::Address>> + Debug + Default + Sized;
-    type DecodeError: DecodeError + Debug + Display;
-    type Decoder: Decoder<Self> + Default;
-    type Operand;
-}
-
-#[cfg(not(feature="use-serde"))]
-pub trait Arch {
-    type Word: Debug + Display + PartialEq + Eq;
-    type Address: Address + Debug + Hash + PartialEq + Eq;
+    type Address: AddressBounds;
     type Instruction: Instruction + LengthedInstruction<Unit=AddressDiff<Self::Address>> + Debug + Default + Sized;
     type DecodeError: DecodeError + Debug + Display;
     type Decoder: Decoder<Self> + Default;
