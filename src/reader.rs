@@ -39,6 +39,16 @@ impl<'a> U8Reader<'a> {
     }
 }
 
+/* a `std::io::Read`-friendly `Reader` would take some thought. this was an old impl, and now would
+ * require something like
+ * ```
+ * pub struct IoReader<'io, T: std::io::Read> {
+ *   io: &io mut T,
+ *   count: u64,
+ *   start: u64,
+ * }
+ * ```
+ */
 /*
 #[cfg(feature = "std")]
 impl<T: std::io::Read> Reader<u8> for T {
@@ -55,207 +65,201 @@ impl<T: std::io::Read> Reader<u8> for T {
 }
 */
 
-impl Reader<u64, u8> for U8Reader<'_> {
-    #[inline]
-    fn next(&mut self) -> Result<u8, ReadError> {
-        if self.data == self.end {
-            Err(ReadError::ExhaustedInput)
-        } else {
-            let word = unsafe { core::ptr::read(self.data) };
-            unsafe {
-                self.data = self.data.offset(1);
+macro_rules! word_wrapper {
+    ($name:ident, $underlying:ident) => {
+        #[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Copy, Clone)]
+        pub struct $name(pub $underlying);
+
+        impl core::fmt::Display for $name {
+            fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+                write!(f, "{}", self.0)
             }
-            Ok(word)
         }
     }
-    #[inline]
-    fn next_n(&mut self, buf: &mut [u8]) -> Result<(), ReadError> {
-        if let Some(data_size) = (self.end as usize).checked_sub(self.data as usize) {
-            if buf.len() > data_size {
-                return Err(ReadError::ExhaustedInput);
+}
+
+word_wrapper!(U16le, u16);
+word_wrapper!(U16be, u16);
+word_wrapper!(U32le, u32);
+word_wrapper!(U32be, u32);
+word_wrapper!(U64le, u64);
+word_wrapper!(U64be, u64);
+
+macro_rules! u8reader_reader_impl {
+    ($addr_size:ident, $word:ident, $word_from_slice:expr, $words_from_slice:expr) => {
+        impl Reader<$addr_size, $word> for U8Reader<'_> {
+            #[inline]
+            fn next(&mut self) -> Result<$word, ReadError> {
+                let data_size = self.end as usize - self.data as usize;
+
+                if core::mem::size_of::<$word>() > data_size {
+                    return Err(ReadError::ExhaustedInput);
+                }
+
+                // `word_from_slice` knows that we have bounds-checked that `word`-many bytes are
+                // available.
+                let word = $word_from_slice(self.data);
+                unsafe {
+                    self.data = self.data.offset(core::mem::size_of::<$word>() as isize);
+                }
+                Ok(word)
             }
-            unsafe {
-                core::ptr::copy_nonoverlapping(self.data, buf.as_mut_ptr(), buf.len());
+            #[inline]
+            fn next_n(&mut self, buf: &mut [$word]) -> Result<(), ReadError> {
+                let data_size = self.end as usize - self.data as usize;
+
+                let words_size_bytes = buf.len() * core::mem::size_of::<$word>();
+                if words_size_bytes > data_size {
+                    return Err(ReadError::ExhaustedInput);
+                }
+
+                // `word_from_slice` knows that we have bounds-checked that `word`-many bytes are
+                // available.
+                $words_from_slice(self.data, buf);
+                unsafe {
+                    self.data = self.data.offset(words_size_bytes as isize);
+                }
+                Ok(())
             }
-            unsafe {
-                self.data = self.data.offset(buf.len() as isize);
+            #[inline]
+            fn mark(&mut self) {
+                self.mark = self.data;
             }
-            Ok(())
-        } else {
-            Err(ReadError::ExhaustedInput)
-        }
-    }
-    #[inline]
-    fn mark(&mut self) {
-        self.mark = self.data;
-    }
-    #[inline]
-    fn offset(&mut self) -> u64 {
-        self.data as u64 - self.mark as u64
-    }
-    #[inline]
-    fn total_offset(&mut self) -> u64 {
-        self.data as u64 - self.start as u64
-    }
-}
-
-impl Reader<u32, u8> for U8Reader<'_> {
-    fn next(&mut self) -> Result<u8, ReadError> {
-        if self.data == self.end {
-            Err(ReadError::ExhaustedInput)
-        } else {
-            let word = unsafe { core::ptr::read(self.data) };
-            unsafe {
-                self.data = self.data.offset(1);
+            #[inline]
+            fn offset(&mut self) -> $addr_size {
+                (self.data as usize - self.mark as usize) as $addr_size
             }
-            Ok(word)
-        }
-    }
-    #[inline]
-    fn next_n(&mut self, buf: &mut [u8]) -> Result<(), ReadError> {
-        if let Some(data_size) = (self.end as usize).checked_sub(self.data as usize) {
-            if buf.len() > data_size {
-                return Err(ReadError::ExhaustedInput);
+            #[inline]
+            fn total_offset(&mut self) -> $addr_size {
+                (self.data as usize - self.start as usize) as $addr_size
             }
-            unsafe {
-                core::ptr::copy_nonoverlapping(self.data, buf.as_mut_ptr(), buf.len());
-            }
-            self.data = unsafe { self.data.offset(buf.len() as isize) };
-            Ok(())
-        } else {
-            Err(ReadError::ExhaustedInput)
+        }
+
+    }
+}
+
+macro_rules! u8reader_each_addr_size {
+    ($word:ident, $word_from_slice:expr, $words_from_slice:expr) => {
+        u8reader_reader_impl!(u64, $word, $word_from_slice, $words_from_slice);
+        u8reader_reader_impl!(u32, $word, $word_from_slice, $words_from_slice);
+    }
+}
+u8reader_each_addr_size!(u8,
+    |ptr: *const u8| { unsafe { core::ptr::read(ptr) } },
+    |ptr: *const u8, buf: &mut [u8]| {
+        unsafe {
+            core::ptr::copy_nonoverlapping(ptr, buf.as_mut_ptr(), buf.len())
         }
     }
-    fn mark(&mut self) {
-        self.mark = self.data;
-    }
-    fn offset(&mut self) -> u32 {
-        self.data as u32 - self.mark as u32
-    }
-    fn total_offset(&mut self) -> u32 {
-        self.data as u32 - self.start as u32
-    }
-}
+);
 
-/*
-#[derive(Debug, PartialEq, Eq)]
-pub struct U16le(pub u16);
-
-impl Reader<U16le> for &[u8] {
-    fn next(&mut self) -> Result<U16le, ReadError> {
-        if self.len() < 2 {
-            Err(ReadError::ExhaustedInput)
-        } else {
-            let bytes = [self[0], self[1]];
-            *self = &self[2..];
-            Ok(U16le(u16::from_le_bytes(bytes)))
+u8reader_each_addr_size!(U16le,
+    |ptr: *const u8| {
+        let mut word = [0u8; 2];
+        unsafe {
+            core::ptr::copy_nonoverlapping(ptr, word.as_mut_ptr(), word.len());
+        }
+        U16le(u16::from_le_bytes(word))
+    },
+    |ptr: *const u8, buf: &mut [U16le]| {
+        // `U16le` are layout-identical to u16, so we can just copy into buf
+        unsafe {
+            core::ptr::copy_nonoverlapping(ptr, buf.as_mut_ptr() as *mut u8, buf.len() * core::mem::size_of::<U16le>())
         }
     }
-}
+);
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct U16be(pub u16);
-
-impl Reader<U16be> for &[u8] {
-    fn next(&mut self) -> Result<U16be, ReadError> {
-        if self.len() < 2 {
-            Err(ReadError::ExhaustedInput)
-        } else {
-            let bytes = [self[0], self[1]];
-            *self = &self[2..];
-            Ok(U16be(u16::from_be_bytes(bytes)))
+u8reader_each_addr_size!(U32le,
+    |ptr: *const u8| {
+        let mut word = [0u8; 4];
+        unsafe {
+            core::ptr::copy_nonoverlapping(ptr, word.as_mut_ptr(), word.len());
+        }
+        U32le(u32::from_le_bytes(word))
+    },
+    |ptr: *const u8, buf: &mut [U32le]| {
+        // `U32le` are layout-identical to u32, so we can just copy into buf
+        unsafe {
+            core::ptr::copy_nonoverlapping(ptr, buf.as_mut_ptr() as *mut u8, buf.len() * core::mem::size_of::<U32le>())
         }
     }
-}
+);
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct U32le(pub u32);
-
-impl Reader<U32le> for &[u8] {
-    fn next(&mut self) -> Result<U32le, ReadError> {
-        if self.len() < 4 {
-            Err(ReadError::ExhaustedInput)
-        } else {
-            let bytes = [self[0], self[1], self[2], self[3]];
-            *self = &self[4..];
-            Ok(U32le(u32::from_le_bytes(bytes)))
+u8reader_each_addr_size!(U64le,
+    |ptr: *const u8| {
+        let mut word = [0u8; 8];
+        unsafe {
+            core::ptr::copy_nonoverlapping(ptr, word.as_mut_ptr(), word.len());
+        }
+        U64le(u64::from_le_bytes(word))
+    },
+    |ptr: *const u8, buf: &mut [U64le]| {
+        // `U64le` are layout-identical to u64, so we can just copy into buf
+        unsafe {
+            core::ptr::copy_nonoverlapping(ptr, buf.as_mut_ptr() as *mut u8, buf.len() * core::mem::size_of::<U64le>())
         }
     }
-}
+);
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct U32be(pub u32);
+u8reader_each_addr_size!(U16be,
+    |ptr: *const u8| {
+        let mut word = [0u8; 2];
+        unsafe {
+            core::ptr::copy_nonoverlapping(ptr, word.as_mut_ptr(), word.len());
+        }
+        U16be(u16::from_be_bytes(word))
+    },
+    |ptr: *const u8, buf: &mut [U16be]| {
+        // `U16be` are layout-identical to u16, so we can just copy into buf
+        unsafe {
+            core::ptr::copy_nonoverlapping(ptr, buf.as_mut_ptr() as *mut u8, buf.len() * core::mem::size_of::<U16be>())
+        }
 
-impl Reader<U32be> for &[u8] {
-    fn next(&mut self) -> Result<U32be, ReadError> {
-        if self.len() < 4 {
-            Err(ReadError::ExhaustedInput)
-        } else {
-            let bytes = [self[0], self[1], self[2], self[3]];
-            *self = &self[4..];
-            Ok(U32be(u32::from_be_bytes(bytes)))
+        // but now we have to bswap all the words
+        for i in 0..buf.len() {
+            buf[i] = U16be(buf[i].0.swap_bytes());
         }
     }
-}
+);
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct U64le(pub u64);
+u8reader_each_addr_size!(U32be,
+    |ptr: *const u8| {
+        let mut word = [0u8; 4];
+        unsafe {
+            core::ptr::copy_nonoverlapping(ptr, word.as_mut_ptr(), word.len());
+        }
+        U32be(u32::from_be_bytes(word))
+    },
+    |ptr: *const u8, buf: &mut [U32be]| {
+        // `U32be` are layout-identical to u32, so we can just copy into buf
+        unsafe {
+            core::ptr::copy_nonoverlapping(ptr, buf.as_mut_ptr() as *mut u8, buf.len() * core::mem::size_of::<U32be>())
+        }
 
-impl Reader<U64le> for &[u8] {
-    fn next(&mut self) -> Result<U64le, ReadError> {
-        if self.len() < 8 {
-            Err(ReadError::ExhaustedInput)
-        } else {
-            let bytes = [self[0], self[1], self[2], self[3], self[4], self[5], self[6], self[7]];
-            *self = &self[8..];
-            Ok(U64le(u64::from_le_bytes(bytes)))
+        // but now we have to bswap all the words
+        for i in 0..buf.len() {
+            buf[i] = U32be(buf[i].0.swap_bytes());
         }
     }
-}
+);
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct U64be(pub u64);
+u8reader_each_addr_size!(U64be,
+    |ptr: *const u8| {
+        let mut word = [0u8; 8];
+        unsafe {
+            core::ptr::copy_nonoverlapping(ptr, word.as_mut_ptr(), word.len());
+        }
+        U64be(u64::from_be_bytes(word))
+    },
+    |ptr: *const u8, buf: &mut [U64be]| {
+        // `U64be` are layout-identical to u64, so we can just copy into buf
+        unsafe {
+            core::ptr::copy_nonoverlapping(ptr, buf.as_mut_ptr() as *mut u8, buf.len() * core::mem::size_of::<U64be>())
+        }
 
-impl Reader<U64be> for &[u8] {
-    fn next(&mut self) -> Result<U64be, ReadError> {
-        if self.len() < 8 {
-            Err(ReadError::ExhaustedInput)
-        } else {
-            let bytes = [self[0], self[1], self[2], self[3], self[4], self[5], self[6], self[7]];
-            *self = &self[8..];
-            Ok(U64be(u64::from_be_bytes(bytes)))
+        // but now we have to bswap all the words
+        for i in 0..buf.len() {
+            buf[i] = U64be(buf[i].0.swap_bytes());
         }
     }
-}
-
-impl core::fmt::Display for U16le {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-impl core::fmt::Display for U16be {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-impl core::fmt::Display for U32le {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-impl core::fmt::Display for U32be {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-impl core::fmt::Display for U64le {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-impl core::fmt::Display for U64be {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-*/
+);
