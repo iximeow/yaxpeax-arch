@@ -1,3 +1,20 @@
+## 0.2.0
+
+correct a bug in 0.1.0 that incorrectly bounded `DecodeError` and did not actually require `std::error::Error`. added a test that `std::error::Error` is actually required of `Arch::DecodeError` in non-std builds.
+
+## 0.1.0
+
+new trait `Reader` to provide a reader of `Arch`-defined `Word`s. in many cases it is acceptable for `Word` to be `u8`, but `yaxpeax-arch` provides pre-defined words `u8`, `U16le`, `U16be`, `U32le`, `U32be`, `U64le`, and `U64be`.
+
+`yaxpeax_arch::U8Reader` is a struct to read from `&[u8]` that implements `Reader` for all predefined words. it is suitable to read larger words if the minimum word size is still one byte.
+
+`Decoder` now decodes from a `Reader<A::Address, A::Word>`, to prepare for ISAs where instruction sizes are not multiples of 8 bits.
+
+`yaxpeax_arch::DecodeError` now requires a `std::error::Error` impl for `std` builds, to support interop with the Rust `error` ecosystem.
+
+committed to `AddressDiff` being convertable to a primitive with `AddressDiff::to_const`
+- this addresses the need for hacks to translate an instruction length into a usize
+
 ## 0.0.5
 
 swap the `termion` dependency for `crossterm`. this is motivated by improved cross-platform support (notably Windows) as well as removing a type parameter from `Colored` and `YaxColors`.
