@@ -31,6 +31,8 @@ pub use color::{Colorize, NoColors, YaxColors};
 pub use color::ColorSettings;
 
 pub mod display;
+mod reader;
+pub use reader::{Reader, ReadError, U8Reader}; //, U16le, U16be, U32le, U32be, U64le, U64be};
 
 pub trait DecodeError {
     fn data_exhausted(&self) -> bool;
@@ -61,12 +63,13 @@ impl DecodeError for StandardDecodeError {
     fn bad_operand(&self) -> bool { *self == StandardDecodeError::InvalidOperand }
 }
 
-    fn decode<T: Reader<A::Word>>(&self, bytes: &mut T) -> Result<A::Instruction, Self::Error> {
+pub trait Decoder<A: Arch + ?Sized> {
+    fn decode<T: Reader<A::Address, A::Word>>(&self, words: &mut T) -> Result<A::Instruction, A::DecodeError> {
         let mut inst = A::Instruction::default();
-        self.decode_into(&mut inst, bytes).map(|_: ()| inst)
+        self.decode_into(&mut inst, words).map(|_: ()| inst)
     }
 
-    fn decode_into<T: Reader<A::Word>>(&self, inst: &mut A::Instruction, bytes: &mut T) -> Result<(), Self::Error>;
+    fn decode_into<T: Reader<A::Address, A::Word>>(&self, inst: &mut A::Instruction, words: &mut T) -> Result<(), A::DecodeError>;
 }
 
 #[cfg(feature="use-serde")]
@@ -75,7 +78,7 @@ pub trait Arch {
     type Address: Address + Debug + Hash + PartialEq + Eq + Serialize + for<'de> Deserialize<'de>;
     type Instruction: Instruction + LengthedInstruction<Unit=AddressDiff<Self::Address>> + Debug + Default + Sized;
     type DecodeError: DecodeError + Debug + Display;
-    type Decoder: Decoder<Self, Error=Self::DecodeError> + Default;
+    type Decoder: Decoder<Self> + Default;
     type Operand;
 }
 
@@ -85,7 +88,7 @@ pub trait Arch {
     type Address: Address + Debug + Hash + PartialEq + Eq;
     type Instruction: Instruction + LengthedInstruction<Unit=AddressDiff<Self::Address>> + Debug + Default + Sized;
     type DecodeError: DecodeError + Debug + Display;
-    type Decoder: Decoder<Self, Error=Self::DecodeError> + Default;
+    type Decoder: Decoder<Self> + Default;
     type Operand;
 }
 
