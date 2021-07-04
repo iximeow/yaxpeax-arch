@@ -1,5 +1,8 @@
 ## yaxpeax-arch
 
+[![crate](https://img.shields.io/crates/v/yaxpeax-arch.svg?logo=rust)](https://crates.io/crates/yaxpeax-arch)
+[![documentation](https://docs.rs/yaxpeax-arch/badge.svg)](https://docs.rs/yaxpeax-arch)
+
 shared traits for architecture definitions, instruction decoders, and related interfaces for instruction decoders from the yaxpeax project.
 
 ### implementations
@@ -38,6 +41,3 @@ there are numerous architectures for which decoders are implemented, at varying 
 the canonical copy of `yaxpeax-arch` is at [https://git.iximeow.net/yaxpeax-arch](https://git.iximeow.net/yaxpeax-arch).
 
 `yaxpeax-arch` is also mirrored on GitHub at [https://www.github.com/iximeow/yaxpeax-arch](https://www.github.com/iximeow/yaxpeax-arch).
-
-### ! user beware !
-these interfaces will almost certainly move and change. the version number is `0.0.4` and i mean it with every fiber of my being.
