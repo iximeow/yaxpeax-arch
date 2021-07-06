@@ -11,14 +11,42 @@ pub enum ReadError {
     IOError(&'static str),
 }
 
+/// a trait defining how `Item`-sized words are read at `Address`-positioned offsets into some
+/// stream of data. for *most* uses, [`yaxpeax_arch::U8Reader`] probably is sufficient. when
+/// reading from data sources that aren't `&[u8]`, `Address` isn't a multiple of `u8`, or `Item`
+/// isn't a multiple of 8 bits, `U8Reader` won't be sufficient.
 pub trait Reader<Address, Item> {
     fn next(&mut self) -> Result<Item, ReadError>;
+    /// read `buf`-many items from this reader in bulk. if `Reader` cannot read `buf`-many items,
+    /// return `ReadError::ExhaustedInput`.
     fn next_n(&mut self, buf: &mut [Item]) -> Result<(), ReadError>;
+    /// mark the current position as where to measure `offset` against.
     fn mark(&mut self);
+    /// the difference, in `Address`, between the current `Reader` position and its last `mark`.
+    /// when created, a `Reader`'s initial position is `mark`ed, so creating a `Reader` and
+    /// immediately calling `offset()` must return `Address::zero()`.
     fn offset(&mut self) -> Address;
+    /// the difference, in `Address`, between the current `Reader` position and the initial offset
+    /// when constructed.
     fn total_offset(&mut self) -> Address;
 }
 
+/// a trait defining how to build a `Reader<Address, Item>` from some data source (`Self`).
+/// definitions of `ReaderBuilder` are provided for `U8Reader` on `Address` and `Word` types that
+/// `yaxpeax_arch` provides - external decoder implementations should also provide `ReaderBuilder`
+/// impls if they use custom `Reader` types.
+pub trait ReaderBuilder<Address: crate::AddressBase, Item> where Self: Sized {
+    type Result: Reader<Address, Item>;
+
+    /// construct a reader from `data` beginning at `addr` from its beginning.
+    fn read_at(data: Self, addr: Address) -> Self::Result;
+    /// construct a reader from `data` beginning at the start of `data`.
+    fn read_from(data: Self) -> Self::Result {
+        Self::read_at(data, Address::zero())
+    }
+}
+
+/// a struct for `Reader` impls that can operate on units of `u8`.
 pub struct U8Reader<'a> {
     start: *const u8,
     data: *const u8,
@@ -29,10 +57,22 @@ pub struct U8Reader<'a> {
 
 impl<'a> U8Reader<'a> {
     pub fn new(data: &'a [u8]) -> U8Reader<'a> {
+
+        // WHY: either on <64b systems we panic on `data.len() > isize::MAX`, or we compute end
+        // without `offset` (which would be UB for such huge slices)
+        #[cfg(not(target_pointer_width = "64"))]
+        let end = data.as_ptr().wrapping_add(data.len());
+
+        // SAFETY: the slice was valid, so data + data.len() does not overflow. at the moment,
+        // there aren't 64-bit systems with 63 bits of virtual address space, so it's not possible
+        // to have a slice length larger than 64-bit isize::MAX.
+        #[cfg(target_pointer_width = "64")]
+        let end = unsafe { data.as_ptr().offset(data.len() as isize) };
+
         U8Reader {
             start: data.as_ptr(),
             data: data.as_ptr(),
-            end: unsafe { data.as_ptr().offset(data.len() as isize) },
+            end,
             mark: data.as_ptr(),
             _lifetime: core::marker::PhantomData,
         }
@@ -135,6 +175,13 @@ macro_rules! u8reader_reader_impl {
             }
         }
 
+        impl<'data> ReaderBuilder<$addr_size, $word> for &'data [u8] {
+            type Result = U8Reader<'data>;
+
+            fn read_at(data: Self, addr: $addr_size) -> Self::Result {
+                U8Reader::new(&data[(addr as usize)..])
+            }
+        }
     }
 }
 

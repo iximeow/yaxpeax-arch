@@ -1,3 +1,11 @@
+## 0.2.2
+
+added `ReaderBuilder` trait and impls for `U8Reader` on various address and word types.
+
+added documentation for `Reader`, `U8Reader`, and `ReaderBuilder`.
+
+avoid an unlikely violation of `core::ptr::offset` safety rules on 32-bit architectures.
+
 ## 0.2.1
 
 updated architecture matrix

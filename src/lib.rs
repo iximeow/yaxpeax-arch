@@ -23,7 +23,7 @@ pub use color::ColorSettings;
 
 pub mod display;
 mod reader;
-pub use reader::{Reader, ReadError, U8Reader, U16le, U16be, U32le, U32be, U64le, U64be};
+pub use reader::{Reader, ReaderBuilder, ReadError, U8Reader, U16le, U16be, U32le, U32be, U64le, U64be};
 
 /// the minimum set of errors a `yaxpeax-arch` disassembler may produce.
 ///
