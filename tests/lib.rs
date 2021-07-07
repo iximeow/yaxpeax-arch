@@ -1,5 +1,7 @@
 use yaxpeax_arch::AddressBase;
 
+mod reader;
+
 #[test]
 fn test_u16() {
     for l in 0..100 {

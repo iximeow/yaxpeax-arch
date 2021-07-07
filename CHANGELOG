@@ -2,6 +2,8 @@
 
 added `Reader` impls for `U8Reader` on `u16` addresses
 
+fix incorrect `Reader` impls of `offset` and `total_offset` on non-`u8` words
+
 ## 0.2.2
 
 added `ReaderBuilder` trait and impls for `U8Reader` on various address and word types.

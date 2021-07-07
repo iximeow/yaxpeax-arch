@@ -6,6 +6,7 @@ impl From<ReadError> for StandardDecodeError {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum ReadError {
     ExhaustedInput,
     IOError(&'static str),
@@ -167,11 +168,13 @@ macro_rules! u8reader_reader_impl {
             }
             #[inline]
             fn offset(&mut self) -> $addr_size {
-                (self.data as usize - self.mark as usize) as $addr_size
+                (self.data as usize - self.mark as usize) as $addr_size /
+                    (core::mem::size_of::<$word>() as $addr_size)
             }
             #[inline]
             fn total_offset(&mut self) -> $addr_size {
-                (self.data as usize - self.start as usize) as $addr_size
+                (self.data as usize - self.start as usize) as $addr_size /
+                    (core::mem::size_of::<$word>() as $addr_size)
             }
         }
 
