@@ -189,6 +189,7 @@ macro_rules! u8reader_each_addr_size {
     ($word:ident, $word_from_slice:expr, $words_from_slice:expr) => {
         u8reader_reader_impl!(u64, $word, $word_from_slice, $words_from_slice);
         u8reader_reader_impl!(u32, $word, $word_from_slice, $words_from_slice);
+        u8reader_reader_impl!(u16, $word, $word_from_slice, $words_from_slice);
     }
 }
 u8reader_each_addr_size!(u8,
