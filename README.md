@@ -35,6 +35,7 @@ there are numerous architectures for which decoders are implemented, at varying 
 | `avr` | [yaxpeax-avr](https://github.com/The6P4C/yaxpeax-avr) | 🥳 | 🚧 | ❓ | contributed by [@the6p4c](https://twitter.com/The6P4C)! |
 | `sh`/`sh2`/`j2`/`sh3`/`sh4` | [yaxpeax-superh](https://git.sr.ht/~nabijaczleweli/yaxpeax-superh) | 🥳 | 🚧 | ❓ | contributed by [наб](https://nabijaczleweli.xyz) |
 | `MOS 6502` | [yaxpeax-6502](https://github.com/cr1901/yaxpeax-6502) | ⚠️ | ❓ | ❓ | contributed by [@cr1901](https://www.twitter.com/cr1901) |
+| `lc87` | [yaxpeax-lc87](https://www.github.com/iximeow/yaxpeax-lc87) | 🥳 | ⚠️ | ❓ | |
 
 ### mirrors
 

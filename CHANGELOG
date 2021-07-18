@@ -1,8 +1,14 @@
+## 0.2.5
+
+added `yaxpeax-lc87` to the matrix
+
+## 0.2.4
+
+fix incorrect `Reader` impls of `offset` and `total_offset` on non-`u8` words
+
 ## 0.2.3
 
 added `Reader` impls for `U8Reader` on `u16` addresses
-
-fix incorrect `Reader` impls of `offset` and `total_offset` on non-`u8` words
 
 ## 0.2.2
 
