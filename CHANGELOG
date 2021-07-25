@@ -1,3 +1,8 @@
+## 0.3.0
+
+TODO: Reader::next_n should return the number of items read as Err(ReadError::Incomplete(n)) if the buffer is exhausted
+TODO: Reader::offset should return an AddressDiff<Address>, not a bare Address
+
 ## 0.2.5
 
 added `yaxpeax-lc87` to the matrix
