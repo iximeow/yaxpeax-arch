@@ -7,7 +7,7 @@ keywords = ["disassembly", "disassembler"]
 license = "0BSD"
 name = "yaxpeax-arch"
 repository = "https://git.iximeow.net/yaxpeax-arch/"
-version = "0.2.5"
+version = "0.2.6"
 
 [dependencies]
 "num-traits" = { version = "0.2", default-features = false }

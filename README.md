@@ -37,6 +37,19 @@ there are numerous architectures for which decoders are implemented, at varying 
 | `MOS 6502` | [yaxpeax-6502](https://github.com/cr1901/yaxpeax-6502) | ⚠️ | ❓ | ❓ | contributed by [@cr1901](https://www.twitter.com/cr1901) |
 | `lc87` | [yaxpeax-lc87](https://www.github.com/iximeow/yaxpeax-lc87) | 🥳 | ⚠️ | ❓ | |
 
+#### features
+
+`yaxpeax-arch` defines a few typically-optional features that decoders can also implement, in addition to simple `(bytes) -> instruction` decoding. these are not crate features, but `yaxpeax-arch` trait impls or collections thereof.
+
+`description_spans`: implementation of [`AnnotatingDecoder`](https://docs.rs/yaxpeax-arch/latest/yaxpeax_arch/trait.AnnotatingDecoder.html), to decode instructions with bit-level details of what incoming bitstreams mean.
+`contextualize`: implementation of [`ShowContextual`](https://docs.rs/yaxpeax-arch/latest/yaxpeax_arch/trait.ShowContextual.html), to display instructions with user-defined information in place of default instruction data. typically expected to show label names instead of relative branch addresses. **i do not recommend implementing this trait**, it needs significant reconsideration.
+
+| architecture | `description_spans` | `contextualize` |
+| ------------ | ------------------- | --------------- |
+| `x86_64` | 🥳 | ❓ |
+| `ia64` | 🥳 | ❓ |
+| `msp430` | 🥳 | ❓ |
+
 ### mirrors
 
 the canonical copy of `yaxpeax-arch` is at [https://git.iximeow.net/yaxpeax-arch](https://git.iximeow.net/yaxpeax-arch).

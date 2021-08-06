@@ -124,6 +124,15 @@ impl DecodeError for StandardPartialDecoderError {
     }
 }
 
+#[derive(Copy, Clone)]
+struct NoDescription {}
+
+impl fmt::Display for NoDescription {
+    fn fmt(&self, _: &mut fmt::Formatter) -> fmt::Result {
+        Ok(())
+    }
+}
+
 /// an interface to decode [`Arch::Instruction`] words from a reader of [`Arch::Word`]s. errors are
 /// the architecture-defined [`DecodeError`] implemention.
 pub trait Decoder<A: Arch + ?Sized> {
@@ -144,6 +153,63 @@ pub trait Decoder<A: Arch + ?Sized> {
     /// decoding fails. if `decode_into` returns an error, callers may find contradictory and
     /// useless information in `inst`, as well as *stale data* from whatever was passed in.
     fn decode_into<T: Reader<A::Address, A::Word>>(&self, inst: &mut A::Instruction, words: &mut T) -> Result<(), A::DecodeError>;
+}
+
+/// implementors of `DescriptionSink` receive descriptions of an instruction's disassembly process
+/// and relevant offsets in the bitstream being decoded. descriptions are archtecture-specific, and
+/// architectures are expected to be able to turn the bit-level `start` and `width` values into a
+/// meaningful description of bits in the original instruction stream.
+pub trait DescriptionSink<Descriptor> {
+    /// inform this `DescriptionSink` of a `description` that was informed by bits `start` to
+    /// `end` from the start of an instruction's decoding. `start` and `end` are only relative the
+    /// instruction being decoded when this sink `DescriptionSink` provided, so they will have no
+    /// relation to the position in an underlying data stream used for past or future instructions.
+    fn record(&mut self, start: u32, end: u32, description: Descriptor);
+}
+
+pub struct NullSink;
+
+impl<T> DescriptionSink<T> for NullSink {
+    fn record(&mut self, _start: u32, _end: u32, _description: T) { }
+}
+
+#[cfg(feature = "std")]
+pub struct VecSink<T: Clone + Display> {
+    pub records: std::vec::Vec<(u32, u32, T)>
+}
+
+#[cfg(feature = "std")]
+impl<T: Clone + Display> VecSink<T> {
+    pub fn new() -> Self {
+        VecSink { records: std::vec::Vec::new() }
+    }
+}
+
+#[cfg(feature = "std")]
+impl<T: Clone + Display> DescriptionSink<T> for VecSink<T> {
+    fn record(&mut self, start: u32, end: u32, description: T) {
+        self.records.push((start, end, description));
+    }
+}
+
+pub trait FieldDescription {
+    fn id(&self) -> u32;
+    fn is_separator(&self) -> bool;
+}
+
+/// an interface to decode [`Arch::Instruction`] words from a reader of [`Arch::Word`]s, with the
+/// decoder able to report descriptions of bits or fields in the instruction to a sink implementing
+/// [`DescriptionSink`]. the sink may be [`NullSink`] which discards provided data. decoding with a
+/// `NullSink` should behave identically to `Decoder::decode_into`. implementors are recommended to
+/// implement `Decoder::decode_into` as a call to `AnnotatingDecoder::decode_with_fields` if
+/// implementing both traits.
+pub trait AnnotatingDecoder<A: Arch + ?Sized> {
+    type FieldDescription: FieldDescription + Clone + Display + PartialEq;
+
+    fn decode_with_annotation<
+        T: Reader<A::Address, A::Word>,
+        S: DescriptionSink<Self::FieldDescription>
+    >(&self, inst: &mut A::Instruction, words: &mut T, sink: &mut S) -> Result<(), A::DecodeError>;
 }
 
 #[cfg(feature = "use-serde")]

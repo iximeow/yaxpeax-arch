@@ -2,6 +2,17 @@
 
 TODO: Reader::next_n should return the number of items read as Err(ReadError::Incomplete(n)) if the buffer is exhausted
 TODO: Reader::offset should return an AddressDiff<Address>, not a bare Address
+TODO: impls of `fn one` and `fn zero` so downstream users don't have to import num_traits directly
+
+## 0.2.6
+
+added `AnnotatingDecoder` and associated traits `FieldDescription` and `DescriptionSink` for architectures to report meanings for bit ranges in decoded instructions.
+
+added `NullSink`, with an `impl<T> DescriptionSink<T> for NullSink` - `NullSink` can always be used to discard instruction annotations. this is mostly useful for shared annotating and non-annotating decode logic.
+
+added a `docs/` directory for `yaxpeax-arch`: trip reports for `yaxpeax-arch` design. if `yaxpeax` eventually grows an RFC process one day, these are the kind of changes that would get RFC'd.
+
+added `docs/0001-AnnotatingDecoder.md`, describing motivation and implementation notes of `AnnotatingDecoder`.
 
 ## 0.2.5
 
