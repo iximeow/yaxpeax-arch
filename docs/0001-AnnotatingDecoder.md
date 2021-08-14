@@ -55,9 +55,9 @@ where `FieldDescription` lets callers that operate generically over spans do *so
 
 ### implementation
 
-i've added WIP support for span reporting to `msp430`, `ia64`, and `x86` decoders. i extended `yaxpeax-dis` to [make pretty lines](https://twitter.com/iximeow/status/1423930207614889984). more could be said about that; `id`-order is expected to be, roughtly, the order an instruction is decoded. some instructions sets keep the "first" bits as the low-order bits, some others use the higher bits. so respecting `id`-order necessarily means some instruction sets will have fields "backwards" and make lines extra confusing.
+i've added WIP support for span reporting to `msp430`, `ia64`, and `x86` decoders. i extended `yaxpeax-dis` to [make pretty lines](https://twitter.com/iximeow/status/1423930207614889984). more could be said about that; `id`-order is expected to be, roughtly, the order an instruction is decoded. some instructions sets keep the "first" bits as the low-order bits, some others use the higher bits first. so respecting `id`-order necessarily means some instruction sets will have fields "backwards" and make lines extra confusing.
 
-decoders probably ought to indicate boundaries for significant parts of decoding, lest large instructions [like itanium](https://twitter.com/iximeow/status/1424092536071618561) be a nebulous mess. maybe `FieldDescription` could have a `is_separator()` to know when an element (and its bit range) indicates the end of part of an instruction?
+decoders probably ought to indicate boundaries for significant parts of decoding, lest large instructions [like itanium](https://twitter.com/iximeow/status/1424092536071618561) be a nebulous mess. maybe `FieldDescription` could have an `is_separator()` to know when an element (and its bit range) indicates the end of part of an instruction?
 
 for the most part, things work great. `yaxpeax-x86` had a minor performance regression. tracking it down wasn't too bad: the first one was because `sink` is a fifth argument for a non-inlined function. at this point most ABIs start spilling to memory. so an unused `sink` caused an extra stack write. this was a measurable overhead. the second regression was again pretty simple looking at `disas-bench` builds:
 
