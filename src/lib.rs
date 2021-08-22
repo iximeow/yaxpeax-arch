@@ -1,4 +1,5 @@
 #![no_std]
+#![doc = include_str!("../README.md")]
 
 use core::fmt::{self, Debug, Display};
 use core::hash::Hash;
