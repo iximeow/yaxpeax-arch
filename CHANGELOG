@@ -4,6 +4,12 @@ TODO: Reader::next_n should return the number of items read as Err(ReadError::In
 TODO: Reader::offset should return an AddressDiff<Address>, not a bare Address
 TODO: impls of `fn one` and `fn zero` so downstream users don't have to import num_traits directly
 
+## 0.2.7
+
+moved `AnnotatingDecoder` and its associated types to `annotation/`, for module-level documentation about that feature.
+
+yanked 0.2.6 because there was not yet a user of it other than myself, and it had this feature in the wrong location in the crate.
+
 ## 0.2.6
 
 added `AnnotatingDecoder` and associated traits `FieldDescription` and `DescriptionSink` for architectures to report meanings for bit ranges in decoded instructions.

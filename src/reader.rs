@@ -13,7 +13,7 @@ pub enum ReadError {
 }
 
 /// a trait defining how `Item`-sized words are read at `Address`-positioned offsets into some
-/// stream of data. for *most* uses, [`yaxpeax_arch::U8Reader`] probably is sufficient. when
+/// stream of data. for *most* uses, [`crate::U8Reader`] probably is sufficient. when
 /// reading from data sources that aren't `&[u8]`, `Address` isn't a multiple of `u8`, or `Item`
 /// isn't a multiple of 8 bits, `U8Reader` won't be sufficient.
 pub trait Reader<Address, Item> {
