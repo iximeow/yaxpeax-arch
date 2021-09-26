@@ -6,6 +6,12 @@ impl From<ReadError> for StandardDecodeError {
     }
 }
 
+impl From<ReadError> for StandardPartialDecoderError {
+    fn from(_: ReadError) -> StandardPartialDecoderError {
+        StandardPartialDecoderError::ExhaustedInput
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum ReadError {
     ExhaustedInput,

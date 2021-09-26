@@ -4,6 +4,8 @@ TODO: Reader::next_n should return the number of items read as Err(ReadError::In
 TODO: Reader::offset should return an AddressDiff<Address>, not a bare Address
 TODO: impls of `fn one` and `fn zero` so downstream users don't have to import num_traits directly
 
+added an impl of `From<ReadError>` for `StandardPartialDecoderError`, matching the existing `StandardDecodeError` impl.
+
 ## 0.2.7
 
 moved `AnnotatingDecoder` and its associated types to `annotation/`, for module-level documentation about that feature.
