@@ -2,16 +2,16 @@
 
 authors = [ "iximeow <me@iximeow.net>" ]
 description = "fundamental traits to describe an architecture in the yaxpeax project"
-edition = "2018"
+edition = "2021"
 keywords = ["disassembly", "disassembler"]
 license = "0BSD"
 name = "yaxpeax-arch"
 repository = "https://git.iximeow.net/yaxpeax-arch/"
-version = "0.2.7"
+version = "0.2.8"
 
 [dependencies]
 "num-traits" = { version = "0.2", default-features = false }
-"crossterm" = { version = "0.19.0", optional = true }
+"crossterm" = { version = "0.27.0", optional = true }
 "serde" = { version = "1.0", optional = true }
 "serde_derive" = { version = "1.0", optional = true }
 

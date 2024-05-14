@@ -13,6 +13,7 @@ impl <T: Display> Display for Colored<T> {
     fn fmt(&self, fmt: &mut Formatter) -> fmt::Result {
         match self {
             Colored::Color(t, before) => {
+                use crossterm::style::Stylize;
                 write!(fmt, "{}", style::style(t).with(*before))
             },
             Colored::Just(t) => {
