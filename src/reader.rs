@@ -1,4 +1,4 @@
-use crate::StandardDecodeError;
+use crate::{StandardDecodeError, StandardPartialDecoderError};
 
 impl From<ReadError> for StandardDecodeError {
     fn from(_: ReadError) -> StandardDecodeError {

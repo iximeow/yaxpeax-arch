@@ -4,7 +4,13 @@ TODO: Reader::next_n should return the number of items read as Err(ReadError::In
 TODO: Reader::offset should return an AddressDiff<Address>, not a bare Address
 TODO: impls of `fn one` and `fn zero` so downstream users don't have to import num_traits directly
 
+## 0.2.8
+
 added an impl of `From<ReadError>` for `StandardPartialDecoderError`, matching the existing `StandardDecodeError` impl.
+
+moved a use of `serde` types to be covered by the relevant cfg flag; using `colors` without `serde` (unlikely) now actually builds.
+
+fixed up doc comments to build without error.
 
 ## 0.2.7
 

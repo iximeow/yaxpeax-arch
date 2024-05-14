@@ -136,12 +136,10 @@ mod termion_color {
 
     use crossterm::style;
 
-    use serde::Serialize;
-
     use crate::color::{Colored, YaxColors};
 
     #[cfg(feature="use-serde")]
-    impl Serialize for ColorSettings {
+    impl serde::Serialize for ColorSettings {
         fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
             use serde::ser::SerializeStruct;
             let s = serializer.serialize_struct("ColorSettings", 0)?;

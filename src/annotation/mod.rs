@@ -19,6 +19,11 @@
 //! in a generic setting, there isn't much to do with a `FieldDescription` other than display it. a
 //! typical use might look something like:
 //! ```
+//! use core::fmt;
+//!
+//! use yaxpeax_arch::annotation::{AnnotatingDecoder, VecSink};
+//! use yaxpeax_arch::{Arch, Reader, U8Reader};
+//!
 //! fn show_field_descriptions<A: Arch>(decoder: A::Decoder, buf: &[u8])
 //! where
 //!     A::Decoder: AnnotatingDecoder<A>,
@@ -32,7 +37,7 @@
 //!
 //!     println!("decoded instruction {}", inst);
 //!     for (start, end, desc) in sink.records.iter() {
-//!         println("  bits [{}, {}]: {}", start, end, desc);
+//!         println!("  bits [{}, {}]: {}", start, end, desc);
 //!     }
 //! }
 //! ```
