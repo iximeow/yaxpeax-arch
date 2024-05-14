@@ -12,6 +12,8 @@ moved a use of `serde` types to be covered by the relevant cfg flag; using `colo
 
 fixed up doc comments to build without error.
 
+(and additional testing permutations to validate cfg flags and doc comments in the future)
+
 ## 0.2.7
 
 moved `AnnotatingDecoder` and its associated types to `annotation/`, for module-level documentation about that feature.
