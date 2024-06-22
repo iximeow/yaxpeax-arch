@@ -5,6 +5,7 @@ Step.push("build")
 Build.run({"cargo", "build"})
 
 Step.advance("test")
+-- TODO: set `-D warnings` here and below...
 Build.run({"cargo", "test"}, {name="test default features"})
 
 -- `cargo test` ends up running doc tests. great! but yaxpeax-arch's docs reference items in std only.

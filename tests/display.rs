@@ -22,6 +22,23 @@ fn sinks_are_equivalent() {
 }
 */
 
+#[test]
+#[allow(deprecated)]
+fn formatters_are_not_feature_gated() {
+    use yaxpeax_arch::display::{
+        u8_hex, u16_hex, u32_hex, u64_hex,
+        signed_i8_hex, signed_i16_hex, signed_i32_hex, signed_i64_hex
+    };
+    let _ = u8_hex(10);
+    let _ = u16_hex(10);
+    let _ = u32_hex(10);
+    let _ = u64_hex(10);
+    let _ = signed_i8_hex(10);
+    let _ = signed_i16_hex(10);
+    let _ = signed_i32_hex(10);
+    let _ = signed_i64_hex(10);
+}
+
 #[cfg(feature="alloc")]
 #[test]
 fn display_sink_write_hex_helpers() {

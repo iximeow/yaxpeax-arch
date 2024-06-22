@@ -10,12 +10,15 @@ use core::ops::Neg;
 
 mod display_sink;
 
-pub use display_sink::{DisplaySink, FmtSink, InstructionTextSink};
+pub use display_sink::{DisplaySink, FmtSink};
+#[cfg(feature = "alloc")]
+pub use display_sink::InstructionTextSink;
 
 /// translate a byte in range `[0, 15]` to a lowercase base-16 digit.
 ///
 /// if `c` is in range, the output is always valid as the sole byte in a utf-8 string. if `c` is out
 /// of range, the returned character might not be a valid single-byte utf-8 codepoint.
+#[cfg(feature = "alloc")] // this function is of course not directly related to alloc, but it's only needed by impls that themselves are only present with alloc.
 fn u8_to_hex(c: u8) -> u8 {
     // this conditional branch is faster than a lookup for... most architectures (especially x86
     // with cmov)

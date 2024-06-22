@@ -1,9 +1,5 @@
 use core::fmt;
 
-use crate::display::u8_to_hex;
-
-use crate::safer_unchecked::unreachable_kinda_unchecked;
-
 /// `DisplaySink` allows client code to collect output and minimal markup. this is currently used
 /// in formatting instructions for two reasons:
 /// * `DisplaySink` implementations have the opportunity to collect starts and ends of tokens at
@@ -372,81 +368,509 @@ impl<'a, T: fmt::Write> fmt::Write for FmtSink<'a, T> {
     }
 }
 
-/// this is an implementation detail of yaxpeax-arch and related crates. if you are a user of the
-/// disassemblers, do not use this struct. do not depend on this struct existing. this struct is
-/// not stable. this struct is not safe for general use. if you use this struct you and your
-/// program will be eaten by gremlins.
-///
-/// if you are implementing an instruction formatter for the yaxpeax family of crates: this struct
-/// is guaranteed to contain a string that is long enough to hold a fully-formatted instruction.
-/// because the buffer is guaranteed to be long enough, writes through `InstructionTextSink` are
-/// not bounds-checked, and the buffer is never grown.
-///
-/// this is wildly dangerous in general use. the public constructor of `InstructionTextSink` is
-/// unsafe as a result. as used in `InstructionFormatter`, the buffer is guaranteed to be
-/// `clear()`ed before use, `InstructionFormatter` ensures the buffer is large enough, *and*
-/// `InstructionFormatter` never allows `InstructionTextSink` to exist in a context where it would
-/// be written to without being rewound first.
-///
-/// because this opens a very large hole through which `fmt::Write` can become unsafe, incorrect
-/// uses of this struct will be hard to debug in general. `InstructionFormatter` is probably at the
-/// limit of easily-reasoned-about lifecycle of the buffer, which "only" leaves the problem of
-/// ensuring that instruction formatting impls this buffer is passed to are appropriately sized.
-///
-/// this is intended to be hidden in docs. if you see this in docs, it's a bug.
+#[cfg(feature = "alloc")]
+mod instruction_text_sink {
+    use core::fmt;
+
+    use super::{DisplaySink, u8_to_hex};
+    use crate::safer_unchecked::unreachable_kinda_unchecked;
+
+    /// this is an implementation detail of yaxpeax-arch and related crates. if you are a user of the
+    /// disassemblers, do not use this struct. do not depend on this struct existing. this struct is
+    /// not stable. this struct is not safe for general use. if you use this struct you and your
+    /// program will be eaten by gremlins.
+    ///
+    /// if you are implementing an instruction formatter for the yaxpeax family of crates: this struct
+    /// is guaranteed to contain a string that is long enough to hold a fully-formatted instruction.
+    /// because the buffer is guaranteed to be long enough, writes through `InstructionTextSink` are
+    /// not bounds-checked, and the buffer is never grown.
+    ///
+    /// this is wildly dangerous in general use. the public constructor of `InstructionTextSink` is
+    /// unsafe as a result. as used in `InstructionFormatter`, the buffer is guaranteed to be
+    /// `clear()`ed before use, `InstructionFormatter` ensures the buffer is large enough, *and*
+    /// `InstructionFormatter` never allows `InstructionTextSink` to exist in a context where it would
+    /// be written to without being rewound first.
+    ///
+    /// because this opens a very large hole through which `fmt::Write` can become unsafe, incorrect
+    /// uses of this struct will be hard to debug in general. `InstructionFormatter` is probably at the
+    /// limit of easily-reasoned-about lifecycle of the buffer, which "only" leaves the problem of
+    /// ensuring that instruction formatting impls this buffer is passed to are appropriately sized.
+    ///
+    /// this is intended to be hidden in docs. if you see this in docs, it's a bug.
 #[doc(hidden)]
-pub struct InstructionTextSink<'buf> {
-    buf: &'buf mut alloc::string::String
-}
+    pub struct InstructionTextSink<'buf> {
+        buf: &'buf mut alloc::string::String
+    }
 
-impl<'buf> InstructionTextSink<'buf> {
-    // TODO: safety
-    pub unsafe fn new(buf: &'buf mut alloc::string::String) -> Self {
-        Self { buf }
+    impl<'buf> InstructionTextSink<'buf> {
+        // TODO: safety
+        pub unsafe fn new(buf: &'buf mut alloc::string::String) -> Self {
+            Self { buf }
+        }
     }
-}
 
-impl<'buf> fmt::Write for InstructionTextSink<'buf> {
-    fn write_str(&mut self, s: &str) -> Result<(), core::fmt::Error> {
-        self.buf.write_str(s)
+    impl<'buf> fmt::Write for InstructionTextSink<'buf> {
+        fn write_str(&mut self, s: &str) -> Result<(), core::fmt::Error> {
+            self.buf.write_str(s)
+        }
+        fn write_char(&mut self, c: char) -> Result<(), core::fmt::Error> {
+            if cfg!(debug_assertions) {
+                if self.buf.capacity() < self.buf.len() + 1 {
+                    panic!("InstructionTextSink::write_char would overflow output");
+                }
+            }
+            // SAFETY: `buf` is assumed to be long enough to hold all input, `buf` at `underlying.len()`
+            // is valid for writing, but may be uninitialized.
+            //
+            // this function is essentially equivalent to `Vec::push` specialized for the case that
+            // `len < buf.capacity()`:
+            // https://github.com/rust-lang/rust/blob/be9e27e/library/alloc/src/vec/mod.rs#L1993-L2006
+            unsafe {
+                let underlying = self.buf.as_mut_vec();
+                // `InstructionTextSink::write_char` is only used by yaxpeax-x86, and is only used to
+                // write single ASCII characters. this is wrong in the general case, but `write_char`
+                // here is not going to be used in the general case.
+                if cfg!(debug_asertions) {
+                    panic!("InstructionTextSink::write_char would truncate output");
+                }
+                let to_push = c as u8;
+                // `ptr::write` here because `underlying.add(underlying.len())` may not point to an
+                // initialized value, which would mean that turning that pointer into a `&mut u8` to
+                // store through would be UB. `ptr::write` avoids taking the mut ref.
+                underlying.as_mut_ptr().offset(underlying.len() as isize).write(to_push);
+                // we have initialized all (one) bytes that `set_len` is increasing the length to
+                // include.
+                underlying.set_len(underlying.len() + 1);
+            }
+            Ok(())
+        }
     }
-    fn write_char(&mut self, c: char) -> Result<(), core::fmt::Error> {
-        if cfg!(debug_assertions) {
-            if self.buf.capacity() < self.buf.len() + 1 {
-                panic!("InstructionTextSink::write_char would overflow output");
+
+    impl<'buf> DisplaySink for InstructionTextSink<'buf> {
+        #[inline(always)]
+        fn write_fixed_size(&mut self, s: &str) -> Result<(), core::fmt::Error> {
+            if cfg!(debug_assertions) {
+                if self.buf.capacity() < self.buf.len() + s.len() {
+                    panic!("InstructionTextSink::write_fixed_size would overflow output");
+                }
             }
-        }
-        // SAFETY: `buf` is assumed to be long enough to hold all input, `buf` at `underlying.len()`
-        // is valid for writing, but may be uninitialized.
-        //
-        // this function is essentially equivalent to `Vec::push` specialized for the case that
-        // `len < buf.capacity()`:
-        // https://github.com/rust-lang/rust/blob/be9e27e/library/alloc/src/vec/mod.rs#L1993-L2006
-        unsafe {
-            let underlying = self.buf.as_mut_vec();
-            // `InstructionTextSink::write_char` is only used by yaxpeax-x86, and is only used to
-            // write single ASCII characters. this is wrong in the general case, but `write_char`
-            // here is not going to be used in the general case.
-            if cfg!(debug_asertions) {
-                panic!("InstructionTextSink::write_char would truncate output");
+
+            let buf = unsafe { self.buf.as_mut_vec() };
+            let new_bytes = s.as_bytes();
+
+            if new_bytes.len() == 0 {
+                return Ok(());
             }
-            let to_push = c as u8;
-            // `ptr::write` here because `underlying.add(underlying.len())` may not point to an
-            // initialized value, which would mean that turning that pointer into a `&mut u8` to
-            // store through would be UB. `ptr::write` avoids taking the mut ref.
-            underlying.as_mut_ptr().offset(underlying.len() as isize).write(to_push);
-            // we have initialized all (one) bytes that `set_len` is increasing the length to
-            // include.
-            underlying.set_len(underlying.len() + 1);
+
+            if new_bytes.len() >= 16 {
+                unsafe { unreachable_kinda_unchecked() }
+            }
+
+            unsafe {
+                let dest = buf.as_mut_ptr().offset(buf.len() as isize);
+
+                // this used to be enough to bamboozle llvm away from
+                // https://github.com/rust-lang/rust/issues/92993#issuecomment-2028915232https://github.com/rust-lang/rust/issues/92993#issuecomment-2028915232
+                // if `s` is not fixed size. somewhere between Rust 1.68 and Rust 1.74 this stopped
+                // being sufficient, so `write_fixed_size` truly should only be used for fixed size `s`
+                // (otherwise this is a libc memcpy call in disguise). for fixed-size strings this
+                // unrolls into some kind of appropriate series of `mov`.
+                dest.offset(0 as isize).write(new_bytes[0]);
+                for i in 1..new_bytes.len() {
+                    dest.offset(i as isize).write(new_bytes[i]);
+                }
+
+                buf.set_len(buf.len() + new_bytes.len());
+            }
+
+            Ok(())
         }
-        Ok(())
+        unsafe fn write_lt_32(&mut self, s: &str) -> Result<(), fmt::Error> {
+            if cfg!(debug_assertions) {
+                if self.buf.capacity() < self.buf.len() + s.len() {
+                    panic!("InstructionTextSink::write_lt_32 would overflow output");
+                }
+            }
+
+            // SAFETY: todo
+            let buf = unsafe { self.buf.as_mut_vec() };
+            let new_bytes = s.as_bytes();
+
+            // should get DCE
+            if new_bytes.len() >= 32 {
+                unsafe { core::hint::unreachable_unchecked() }
+            }
+
+            unsafe {
+                let dest = buf.as_mut_ptr().offset(buf.len() as isize);
+                let src = new_bytes.as_ptr();
+
+                let rem = new_bytes.len() as isize;
+
+                // set_len early because there is no way to avoid the following asm!() writing that
+                // same number of bytes into buf
+                buf.set_len(buf.len() + new_bytes.len());
+
+                core::arch::asm!(
+                    "6:",
+                    "cmp {rem:e}, 16",
+                    "jb 7f",
+                    "mov {buf:r}, qword ptr [{src} + {rem} - 16]",
+                    "mov qword ptr [{dest} + {rem} - 16], {buf:r}",
+                    "mov {buf:r}, qword ptr [{src} + {rem} - 8]",
+                    "mov qword ptr [{dest} + {rem} - 8], {buf:r}",
+                    "sub {rem:e}, 16",
+                    "jz 11f",
+                    "7:",
+                    "cmp {rem:e}, 8",
+                    "jb 8f",
+                    "mov {buf:r}, qword ptr [{src} + {rem} - 8]",
+                    "mov qword ptr [{dest} + {rem} - 8], {buf:r}",
+                    "sub {rem:e}, 8",
+                    "jz 11f",
+                    "8:",
+                    "cmp {rem:e}, 4",
+                    "jb 9f",
+                    "mov {buf:e}, dword ptr [{src} + {rem} - 4]",
+                    "mov dword ptr [{dest} + {rem} - 4], {buf:e}",
+                    "sub {rem:e}, 4",
+                    "jz 11f",
+                    "9:",
+                    "cmp {rem:e}, 2",
+                    "jb 10f",
+                    "mov {buf:x}, word ptr [{src} + {rem} - 2]",
+                    "mov word ptr [{dest} + {rem} - 2], {buf:x}",
+                    "sub {rem:e}, 2",
+                    "jz 11f",
+                    "10:",
+                    "cmp {rem:e}, 1",
+                    "jb 11f",
+                    "mov {buf:l}, byte ptr [{src} + {rem} - 1]",
+                    "mov byte ptr [{dest} + {rem} - 1], {buf:l}",
+                    "11:",
+                    src = in(reg) src,
+                    dest = in(reg) dest,
+                    rem = inout(reg) rem => _,
+                    buf = out(reg) _,
+                    options(nostack),
+                );
+            }
+
+            Ok(())
+        }
+        unsafe fn write_lt_16(&mut self, s: &str) -> Result<(), fmt::Error> {
+            if cfg!(debug_assertions) {
+                if self.buf.capacity() < self.buf.len() + s.len() {
+                    panic!("InstructionTextSink::write_lt_16 would overflow output");
+                }
+            }
+
+            // SAFETY: todo
+            let buf = unsafe { self.buf.as_mut_vec() };
+            let new_bytes = s.as_bytes();
+
+            // should get DCE
+            if new_bytes.len() >= 16 {
+                unsafe { core::hint::unreachable_unchecked() }
+            }
+
+            unsafe {
+                let dest = buf.as_mut_ptr().offset(buf.len() as isize);
+                let src = new_bytes.as_ptr();
+
+                let rem = new_bytes.len() as isize;
+
+                // set_len early because there is no way to avoid the following asm!() writing that
+                // same number of bytes into buf
+                buf.set_len(buf.len() + new_bytes.len());
+
+                core::arch::asm!(
+                    "7:",
+                    "cmp {rem:e}, 8",
+                    "jb 8f",
+                    "mov {buf:r}, qword ptr [{src} + {rem} - 8]",
+                    "mov qword ptr [{dest} + {rem} - 8], {buf:r}",
+                    "sub {rem:e}, 8",
+                    "jz 11f",
+                    "8:",
+                    "cmp {rem:e}, 4",
+                    "jb 9f",
+                    "mov {buf:e}, dword ptr [{src} + {rem} - 4]",
+                    "mov dword ptr [{dest} + {rem} - 4], {buf:e}",
+                    "sub {rem:e}, 4",
+                    "jz 11f",
+                    "9:",
+                    "cmp {rem:e}, 2",
+                    "jb 10f",
+                    "mov {buf:x}, word ptr [{src} + {rem} - 2]",
+                    "mov word ptr [{dest} + {rem} - 2], {buf:x}",
+                    "sub {rem:e}, 2",
+                    "jz 11f",
+                    "10:",
+                    "cmp {rem:e}, 1",
+                    "jb 11f",
+                    "mov {buf:l}, byte ptr [{src} + {rem} - 1]",
+                    "mov byte ptr [{dest} + {rem} - 1], {buf:l}",
+                    "11:",
+                    src = in(reg) src,
+                    dest = in(reg) dest,
+                    rem = inout(reg) rem => _,
+                    buf = out(reg) _,
+                    options(nostack),
+                );
+            }
+
+            Ok(())
+        }
+        unsafe fn write_lt_8(&mut self, s: &str) -> Result<(), fmt::Error> {
+            if cfg!(debug_assertions) {
+                if self.buf.capacity() < self.buf.len() + s.len() {
+                    panic!("InstructionTextSink::write_lt_8 would overflow output");
+                }
+            }
+
+            // SAFETY: todo
+            let buf = unsafe { self.buf.as_mut_vec() };
+            let new_bytes = s.as_bytes();
+
+            // should get DCE
+            if new_bytes.len() >= 8 {
+                unsafe { core::hint::unreachable_unchecked() }
+            }
+
+            unsafe {
+                let dest = buf.as_mut_ptr().offset(buf.len() as isize);
+                let src = new_bytes.as_ptr();
+
+                let rem = new_bytes.len() as isize;
+
+                // set_len early because there is no way to avoid the following asm!() writing that
+                // same number of bytes into buf
+                buf.set_len(buf.len() + new_bytes.len());
+
+                core::arch::asm!(
+                    "8:",
+                    "cmp {rem:e}, 4",
+                    "jb 9f",
+                    "mov {buf:e}, dword ptr [{src} + {rem} - 4]",
+                    "mov dword ptr [{dest} + {rem} - 4], {buf:e}",
+                    "sub {rem:e}, 4",
+                    "jz 11f",
+                    "9:",
+                    "cmp {rem:e}, 2",
+                    "jb 10f",
+                    "mov {buf:x}, word ptr [{src} + {rem} - 2]",
+                    "mov word ptr [{dest} + {rem} - 2], {buf:x}",
+                    "sub {rem:e}, 2",
+                    "jz 11f",
+                    "10:",
+                    "cmp {rem:e}, 1",
+                    "jb 11f",
+                    "mov {buf:l}, byte ptr [{src} + {rem} - 1]",
+                    "mov byte ptr [{dest} + {rem} - 1], {buf:l}",
+                    "11:",
+                    src = in(reg) src,
+                    dest = in(reg) dest,
+                    rem = inout(reg) rem => _,
+                    buf = out(reg) _,
+                    options(nostack),
+                );
+            }
+
+            Ok(())
+        }
+        /// write a u8 to the output as a base-16 integer.
+        ///
+        /// this is provided for optimization opportunities when the formatted integer can be written
+        /// directly to the sink (rather than formatted to an intermediate buffer and output as a
+        /// followup step)
+        #[inline(always)]
+        fn write_u8(&mut self, mut v: u8) -> Result<(), core::fmt::Error> {
+            if v == 0 {
+                return self.write_fixed_size("0");
+            }
+            // we can fairly easily predict the size of a formatted string here with lzcnt, which also
+            // means we can write directly into the correct offsets of the output string.
+            let printed_size = ((8 - v.leading_zeros() + 3) >> 2) as usize;
+
+            if cfg!(debug_assertions) {
+                if self.buf.capacity() < self.buf.len() + printed_size {
+                    panic!("InstructionTextSink::write_u8 would overflow output");
+                }
+            }
+
+            let buf = unsafe { self.buf.as_mut_vec() };
+            let new_len = buf.len() + printed_size;
+
+            unsafe {
+                buf.set_len(new_len);
+            }
+            let mut p = unsafe { buf.as_mut_ptr().offset(new_len as isize) };
+
+            loop {
+                let digit = v % 16;
+                let c = u8_to_hex(digit as u8);
+                unsafe {
+                    p = p.offset(-1);
+                    p.write(c);
+                }
+                v = v / 16;
+                if v == 0 {
+                    break;
+                }
+            }
+
+            Ok(())
+        }
+        /// write a u16 to the output as a base-16 integer.
+        ///
+        /// this is provided for optimization opportunities when the formatted integer can be written
+        /// directly to the sink (rather than formatted to an intermediate buffer and output as a
+        /// followup step)
+        #[inline(always)]
+        fn write_u16(&mut self, mut v: u16) -> Result<(), core::fmt::Error> {
+            if v == 0 {
+                return self.write_fixed_size("0");
+            }
+
+            // we can fairly easily predict the size of a formatted string here with lzcnt, which also
+            // means we can write directly into the correct offsets of the output string.
+            let printed_size = ((16 - v.leading_zeros() + 3) >> 2) as usize;
+
+            if cfg!(debug_assertions) {
+                if self.buf.capacity() < self.buf.len() + printed_size {
+                    panic!("InstructionTextSink::write_u16 would overflow output");
+                }
+            }
+
+            let buf = unsafe { self.buf.as_mut_vec() };
+            let new_len = buf.len() + printed_size;
+
+            unsafe {
+                buf.set_len(new_len);
+            }
+            let mut p = unsafe { buf.as_mut_ptr().offset(new_len as isize) };
+
+            loop {
+                let digit = v % 16;
+                let c = u8_to_hex(digit as u8);
+                unsafe {
+                    p = p.offset(-1);
+                    p.write(c);
+                }
+                v = v / 16;
+                if v == 0 {
+                    break;
+                }
+            }
+
+            Ok(())
+        }
+        /// write a u32 to the output as a base-16 integer.
+        ///
+        /// this is provided for optimization opportunities when the formatted integer can be written
+        /// directly to the sink (rather than formatted to an intermediate buffer and output as a
+        /// followup step)
+        #[inline(always)]
+        fn write_u32(&mut self, mut v: u32) -> Result<(), core::fmt::Error> {
+            if v == 0 {
+                return self.write_fixed_size("0");
+            }
+
+            // we can fairly easily predict the size of a formatted string here with lzcnt, which also
+            // means we can write directly into the correct offsets of the output string.
+            let printed_size = ((32 - v.leading_zeros() + 3) >> 2) as usize;
+
+            if cfg!(debug_assertions) {
+                if self.buf.capacity() < self.buf.len() + printed_size {
+                    panic!("InstructionTextSink::write_u32 would overflow output");
+                }
+            }
+
+            let buf = unsafe { self.buf.as_mut_vec() };
+            let new_len = buf.len() + printed_size;
+
+            unsafe {
+                buf.set_len(new_len);
+            }
+            let mut p = unsafe { buf.as_mut_ptr().offset(new_len as isize) };
+
+            loop {
+                let digit = v % 16;
+                let c = u8_to_hex(digit as u8);
+                unsafe {
+                    p = p.offset(-1);
+                    p.write(c);
+                }
+                v = v / 16;
+                if v == 0 {
+                    break;
+                }
+            }
+
+            Ok(())
+        }
+        /// write a u64 to the output as a base-16 integer.
+        ///
+        /// this is provided for optimization opportunities when the formatted integer can be written
+        /// directly to the sink (rather than formatted to an intermediate buffer and output as a
+        /// followup step)
+        #[inline(always)]
+        fn write_u64(&mut self, mut v: u64) -> Result<(), core::fmt::Error> {
+            if v == 0 {
+                return self.write_fixed_size("0");
+            }
+
+            // we can fairly easily predict the size of a formatted string here with lzcnt, which also
+            // means we can write directly into the correct offsets of the output string.
+            let printed_size = ((64 - v.leading_zeros() + 3) >> 2) as usize;
+
+            if cfg!(debug_assertions) {
+                if self.buf.capacity() < self.buf.len() + printed_size {
+                    panic!("InstructionTextSink::write_u64 would overflow output");
+                }
+            }
+
+            let buf = unsafe { self.buf.as_mut_vec() };
+            let new_len = buf.len() + printed_size;
+
+            unsafe {
+                buf.set_len(new_len);
+            }
+            let mut p = unsafe { buf.as_mut_ptr().offset(new_len as isize) };
+
+            loop {
+                let digit = v % 16;
+                let c = u8_to_hex(digit as u8);
+                unsafe {
+                    p = p.offset(-1);
+                    p.write(c);
+                }
+                v = v / 16;
+                if v == 0 {
+                    break;
+                }
+            }
+
+            Ok(())
+        }
     }
 }
+#[cfg(feature = "alloc")]
+pub use instruction_text_sink::InstructionTextSink;
+
+
+#[cfg(feature = "alloc")]
+use crate::display::u8_to_hex;
+
+#[cfg(feature = "alloc")]
+use crate::safer_unchecked::unreachable_kinda_unchecked;
 
 /// this [`DisplaySink`] impl exists to support somewhat more performant buffering of the kinds of
 /// strings `yaxpeax-x86` uses in formatting instructions.
 ///
 /// span information is discarded at zero cost.
+#[cfg(feature = "alloc")]
 impl DisplaySink for alloc::string::String {
     #[inline(always)]
     fn write_fixed_size(&mut self, s: &str) -> Result<(), core::fmt::Error> {
@@ -797,416 +1221,6 @@ impl DisplaySink for alloc::string::String {
         self.reserve(printed_size);
 
         let buf = unsafe { self.as_mut_vec() };
-        let new_len = buf.len() + printed_size;
-
-        unsafe {
-            buf.set_len(new_len);
-        }
-        let mut p = unsafe { buf.as_mut_ptr().offset(new_len as isize) };
-
-        loop {
-            let digit = v % 16;
-            let c = u8_to_hex(digit as u8);
-            unsafe {
-                p = p.offset(-1);
-                p.write(c);
-            }
-            v = v / 16;
-            if v == 0 {
-                break;
-            }
-        }
-
-        Ok(())
-    }
-}
-
-impl<'buf> DisplaySink for InstructionTextSink<'buf> {
-    #[inline(always)]
-    fn write_fixed_size(&mut self, s: &str) -> Result<(), core::fmt::Error> {
-        if cfg!(debug_assertions) {
-            if self.buf.capacity() < self.buf.len() + s.len() {
-                panic!("InstructionTextSink::write_fixed_size would overflow output");
-            }
-        }
-
-        let buf = unsafe { self.buf.as_mut_vec() };
-        let new_bytes = s.as_bytes();
-
-        if new_bytes.len() == 0 {
-            return Ok(());
-        }
-
-        if new_bytes.len() >= 16 {
-            unsafe { unreachable_kinda_unchecked() }
-        }
-
-        unsafe {
-            let dest = buf.as_mut_ptr().offset(buf.len() as isize);
-
-            // this used to be enough to bamboozle llvm away from
-            // https://github.com/rust-lang/rust/issues/92993#issuecomment-2028915232https://github.com/rust-lang/rust/issues/92993#issuecomment-2028915232
-            // if `s` is not fixed size. somewhere between Rust 1.68 and Rust 1.74 this stopped
-            // being sufficient, so `write_fixed_size` truly should only be used for fixed size `s`
-            // (otherwise this is a libc memcpy call in disguise). for fixed-size strings this
-            // unrolls into some kind of appropriate series of `mov`.
-            dest.offset(0 as isize).write(new_bytes[0]);
-            for i in 1..new_bytes.len() {
-                dest.offset(i as isize).write(new_bytes[i]);
-            }
-
-            buf.set_len(buf.len() + new_bytes.len());
-        }
-
-        Ok(())
-    }
-    unsafe fn write_lt_32(&mut self, s: &str) -> Result<(), fmt::Error> {
-        if cfg!(debug_assertions) {
-            if self.buf.capacity() < self.buf.len() + s.len() {
-                panic!("InstructionTextSink::write_lt_32 would overflow output");
-            }
-        }
-
-        // SAFETY: todo
-        let buf = unsafe { self.buf.as_mut_vec() };
-        let new_bytes = s.as_bytes();
-
-        // should get DCE
-        if new_bytes.len() >= 32 {
-            unsafe { core::hint::unreachable_unchecked() }
-        }
-
-        unsafe {
-            let dest = buf.as_mut_ptr().offset(buf.len() as isize);
-            let src = new_bytes.as_ptr();
-
-            let rem = new_bytes.len() as isize;
-
-            // set_len early because there is no way to avoid the following asm!() writing that
-            // same number of bytes into buf
-            buf.set_len(buf.len() + new_bytes.len());
-
-            core::arch::asm!(
-                "6:",
-                "cmp {rem:e}, 16",
-                "jb 7f",
-                "mov {buf:r}, qword ptr [{src} + {rem} - 16]",
-                "mov qword ptr [{dest} + {rem} - 16], {buf:r}",
-                "mov {buf:r}, qword ptr [{src} + {rem} - 8]",
-                "mov qword ptr [{dest} + {rem} - 8], {buf:r}",
-                "sub {rem:e}, 16",
-                "jz 11f",
-                "7:",
-                "cmp {rem:e}, 8",
-                "jb 8f",
-                "mov {buf:r}, qword ptr [{src} + {rem} - 8]",
-                "mov qword ptr [{dest} + {rem} - 8], {buf:r}",
-                "sub {rem:e}, 8",
-                "jz 11f",
-                "8:",
-                "cmp {rem:e}, 4",
-                "jb 9f",
-                "mov {buf:e}, dword ptr [{src} + {rem} - 4]",
-                "mov dword ptr [{dest} + {rem} - 4], {buf:e}",
-                "sub {rem:e}, 4",
-                "jz 11f",
-                "9:",
-                "cmp {rem:e}, 2",
-                "jb 10f",
-                "mov {buf:x}, word ptr [{src} + {rem} - 2]",
-                "mov word ptr [{dest} + {rem} - 2], {buf:x}",
-                "sub {rem:e}, 2",
-                "jz 11f",
-                "10:",
-                "cmp {rem:e}, 1",
-                "jb 11f",
-                "mov {buf:l}, byte ptr [{src} + {rem} - 1]",
-                "mov byte ptr [{dest} + {rem} - 1], {buf:l}",
-                "11:",
-                src = in(reg) src,
-                dest = in(reg) dest,
-                rem = inout(reg) rem => _,
-                buf = out(reg) _,
-                options(nostack),
-            );
-        }
-
-        Ok(())
-    }
-    unsafe fn write_lt_16(&mut self, s: &str) -> Result<(), fmt::Error> {
-        if cfg!(debug_assertions) {
-            if self.buf.capacity() < self.buf.len() + s.len() {
-                panic!("InstructionTextSink::write_lt_16 would overflow output");
-            }
-        }
-
-        // SAFETY: todo
-        let buf = unsafe { self.buf.as_mut_vec() };
-        let new_bytes = s.as_bytes();
-
-        // should get DCE
-        if new_bytes.len() >= 16 {
-            unsafe { core::hint::unreachable_unchecked() }
-        }
-
-        unsafe {
-            let dest = buf.as_mut_ptr().offset(buf.len() as isize);
-            let src = new_bytes.as_ptr();
-
-            let rem = new_bytes.len() as isize;
-
-            // set_len early because there is no way to avoid the following asm!() writing that
-            // same number of bytes into buf
-            buf.set_len(buf.len() + new_bytes.len());
-
-            core::arch::asm!(
-                "7:",
-                "cmp {rem:e}, 8",
-                "jb 8f",
-                "mov {buf:r}, qword ptr [{src} + {rem} - 8]",
-                "mov qword ptr [{dest} + {rem} - 8], {buf:r}",
-                "sub {rem:e}, 8",
-                "jz 11f",
-                "8:",
-                "cmp {rem:e}, 4",
-                "jb 9f",
-                "mov {buf:e}, dword ptr [{src} + {rem} - 4]",
-                "mov dword ptr [{dest} + {rem} - 4], {buf:e}",
-                "sub {rem:e}, 4",
-                "jz 11f",
-                "9:",
-                "cmp {rem:e}, 2",
-                "jb 10f",
-                "mov {buf:x}, word ptr [{src} + {rem} - 2]",
-                "mov word ptr [{dest} + {rem} - 2], {buf:x}",
-                "sub {rem:e}, 2",
-                "jz 11f",
-                "10:",
-                "cmp {rem:e}, 1",
-                "jb 11f",
-                "mov {buf:l}, byte ptr [{src} + {rem} - 1]",
-                "mov byte ptr [{dest} + {rem} - 1], {buf:l}",
-                "11:",
-                src = in(reg) src,
-                dest = in(reg) dest,
-                rem = inout(reg) rem => _,
-                buf = out(reg) _,
-                options(nostack),
-            );
-        }
-
-        Ok(())
-    }
-    unsafe fn write_lt_8(&mut self, s: &str) -> Result<(), fmt::Error> {
-        if cfg!(debug_assertions) {
-            if self.buf.capacity() < self.buf.len() + s.len() {
-                panic!("InstructionTextSink::write_lt_8 would overflow output");
-            }
-        }
-
-        // SAFETY: todo
-        let buf = unsafe { self.buf.as_mut_vec() };
-        let new_bytes = s.as_bytes();
-
-        // should get DCE
-        if new_bytes.len() >= 8 {
-            unsafe { core::hint::unreachable_unchecked() }
-        }
-
-        unsafe {
-            let dest = buf.as_mut_ptr().offset(buf.len() as isize);
-            let src = new_bytes.as_ptr();
-
-            let rem = new_bytes.len() as isize;
-
-            // set_len early because there is no way to avoid the following asm!() writing that
-            // same number of bytes into buf
-            buf.set_len(buf.len() + new_bytes.len());
-
-            core::arch::asm!(
-                "8:",
-                "cmp {rem:e}, 4",
-                "jb 9f",
-                "mov {buf:e}, dword ptr [{src} + {rem} - 4]",
-                "mov dword ptr [{dest} + {rem} - 4], {buf:e}",
-                "sub {rem:e}, 4",
-                "jz 11f",
-                "9:",
-                "cmp {rem:e}, 2",
-                "jb 10f",
-                "mov {buf:x}, word ptr [{src} + {rem} - 2]",
-                "mov word ptr [{dest} + {rem} - 2], {buf:x}",
-                "sub {rem:e}, 2",
-                "jz 11f",
-                "10:",
-                "cmp {rem:e}, 1",
-                "jb 11f",
-                "mov {buf:l}, byte ptr [{src} + {rem} - 1]",
-                "mov byte ptr [{dest} + {rem} - 1], {buf:l}",
-                "11:",
-                src = in(reg) src,
-                dest = in(reg) dest,
-                rem = inout(reg) rem => _,
-                buf = out(reg) _,
-                options(nostack),
-            );
-        }
-
-        Ok(())
-    }
-    /// write a u8 to the output as a base-16 integer.
-    ///
-    /// this is provided for optimization opportunities when the formatted integer can be written
-    /// directly to the sink (rather than formatted to an intermediate buffer and output as a
-    /// followup step)
-    #[inline(always)]
-    fn write_u8(&mut self, mut v: u8) -> Result<(), core::fmt::Error> {
-        if v == 0 {
-            return self.write_fixed_size("0");
-        }
-        // we can fairly easily predict the size of a formatted string here with lzcnt, which also
-        // means we can write directly into the correct offsets of the output string.
-        let printed_size = ((8 - v.leading_zeros() + 3) >> 2) as usize;
-
-        if cfg!(debug_assertions) {
-            if self.buf.capacity() < self.buf.len() + printed_size {
-                panic!("InstructionTextSink::write_u8 would overflow output");
-            }
-        }
-
-        let buf = unsafe { self.buf.as_mut_vec() };
-        let new_len = buf.len() + printed_size;
-
-        unsafe {
-            buf.set_len(new_len);
-        }
-        let mut p = unsafe { buf.as_mut_ptr().offset(new_len as isize) };
-
-        loop {
-            let digit = v % 16;
-            let c = u8_to_hex(digit as u8);
-            unsafe {
-                p = p.offset(-1);
-                p.write(c);
-            }
-            v = v / 16;
-            if v == 0 {
-                break;
-            }
-        }
-
-        Ok(())
-    }
-    /// write a u16 to the output as a base-16 integer.
-    ///
-    /// this is provided for optimization opportunities when the formatted integer can be written
-    /// directly to the sink (rather than formatted to an intermediate buffer and output as a
-    /// followup step)
-    #[inline(always)]
-    fn write_u16(&mut self, mut v: u16) -> Result<(), core::fmt::Error> {
-        if v == 0 {
-            return self.write_fixed_size("0");
-        }
-
-        // we can fairly easily predict the size of a formatted string here with lzcnt, which also
-        // means we can write directly into the correct offsets of the output string.
-        let printed_size = ((16 - v.leading_zeros() + 3) >> 2) as usize;
-
-        if cfg!(debug_assertions) {
-            if self.buf.capacity() < self.buf.len() + printed_size {
-                panic!("InstructionTextSink::write_u16 would overflow output");
-            }
-        }
-
-        let buf = unsafe { self.buf.as_mut_vec() };
-        let new_len = buf.len() + printed_size;
-
-        unsafe {
-            buf.set_len(new_len);
-        }
-        let mut p = unsafe { buf.as_mut_ptr().offset(new_len as isize) };
-
-        loop {
-            let digit = v % 16;
-            let c = u8_to_hex(digit as u8);
-            unsafe {
-                p = p.offset(-1);
-                p.write(c);
-            }
-            v = v / 16;
-            if v == 0 {
-                break;
-            }
-        }
-
-        Ok(())
-    }
-    /// write a u32 to the output as a base-16 integer.
-    ///
-    /// this is provided for optimization opportunities when the formatted integer can be written
-    /// directly to the sink (rather than formatted to an intermediate buffer and output as a
-    /// followup step)
-    #[inline(always)]
-    fn write_u32(&mut self, mut v: u32) -> Result<(), core::fmt::Error> {
-        if v == 0 {
-            return self.write_fixed_size("0");
-        }
-
-        // we can fairly easily predict the size of a formatted string here with lzcnt, which also
-        // means we can write directly into the correct offsets of the output string.
-        let printed_size = ((32 - v.leading_zeros() + 3) >> 2) as usize;
-
-        if cfg!(debug_assertions) {
-            if self.buf.capacity() < self.buf.len() + printed_size {
-                panic!("InstructionTextSink::write_u32 would overflow output");
-            }
-        }
-
-        let buf = unsafe { self.buf.as_mut_vec() };
-        let new_len = buf.len() + printed_size;
-
-        unsafe {
-            buf.set_len(new_len);
-        }
-        let mut p = unsafe { buf.as_mut_ptr().offset(new_len as isize) };
-
-        loop {
-            let digit = v % 16;
-            let c = u8_to_hex(digit as u8);
-            unsafe {
-                p = p.offset(-1);
-                p.write(c);
-            }
-            v = v / 16;
-            if v == 0 {
-                break;
-            }
-        }
-
-        Ok(())
-    }
-    /// write a u64 to the output as a base-16 integer.
-    ///
-    /// this is provided for optimization opportunities when the formatted integer can be written
-    /// directly to the sink (rather than formatted to an intermediate buffer and output as a
-    /// followup step)
-    #[inline(always)]
-    fn write_u64(&mut self, mut v: u64) -> Result<(), core::fmt::Error> {
-        if v == 0 {
-            return self.write_fixed_size("0");
-        }
-
-        // we can fairly easily predict the size of a formatted string here with lzcnt, which also
-        // means we can write directly into the correct offsets of the output string.
-        let printed_size = ((64 - v.leading_zeros() + 3) >> 2) as usize;
-
-        if cfg!(debug_assertions) {
-            if self.buf.capacity() < self.buf.len() + printed_size {
-                panic!("InstructionTextSink::write_u64 would overflow output");
-            }
-        }
-
-        let buf = unsafe { self.buf.as_mut_vec() };
         let new_len = buf.len() + printed_size;
 
         unsafe {

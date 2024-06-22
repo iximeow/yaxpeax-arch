@@ -27,7 +27,6 @@ pub use color::ColorSettings;
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
-#[cfg(feature = "alloc")]
 pub mod display;
 
 pub mod testkit;
