@@ -19,6 +19,8 @@
 //! in a generic setting, there isn't much to do with a `FieldDescription` other than display it. a
 //! typical use might look something like:
 //! ```
+//! #[cfg(feature="std")]
+//! # {
 //! use core::fmt;
 //!
 //! use yaxpeax_arch::annotation::{AnnotatingDecoder, VecSink};
@@ -40,6 +42,7 @@
 //!         println!("  bits [{}, {}]: {}", start, end, desc);
 //!     }
 //! }
+//! # }
 //! ```
 //!
 //! note that the range `[start, end]` for a reported span is _inclusive_. the `end`-th bit of a
