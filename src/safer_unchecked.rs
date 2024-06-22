@@ -1,3 +1,13 @@
+//! tools to help validate correct use of `unchecked` functions.
+//!
+//! these `kinda_unchecked` functions will use equivalent implementations that panic when
+//! invariants are violated when the `debug_assertions` config is present, but use the
+//! corresponding `*_unchecked` otherwise.
+//!
+//! for example, `GetSaferUnchecked` uses a normal index when debug assertions are enabled, but
+//! `.get_unchecked()` otherwise. this means that tests and even fuzzing can be made to exercise
+//! panic-on-error cases as desired.
+
 use core::slice::SliceIndex;
 
 pub trait GetSaferUnchecked<T> {
