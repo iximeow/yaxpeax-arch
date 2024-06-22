@@ -13,6 +13,11 @@ TODO: impls of `fn one` and `fn zero` so downstream users don't have to import n
 
 ## 0.3.0
 
+added a new crate feature flag, `alloc`.
+  this flag is for any features that do not require std, but do require
+  containers from `liballoc`. good examples are `alloc::string::String` or
+  `alloc::vec::Vec`.
+
 added `yaxpeax_arch::display::DisplaySink` after revisiting output colorization.
   `DisplaySink` is better suited for general markup, rather than being focused
   specifically on ANSI/console text coloring. `YaxColors` also simply does not
@@ -20,15 +25,20 @@ added `yaxpeax_arch::display::DisplaySink` after revisiting output colorization.
   needs to be styled is only written to after intermediate buffering.
 
 `DisplaySink` also includes specializable functions for writing text to an
-output, and the implementation for `alloc::string::String` takes advantage of
-this: writing through `impl DisplaySink for String` will often be substantially
-more performant than writing through `fmt::Write`.
+  output, and the implementation for `alloc::string::String` takes advantage of
+  this: writing through `impl DisplaySink for String` will often be substantially
+  more performant than writing through `fmt::Write`.
 
 added `yaxpeax_arch::safer_unchecked` to aid in testing use of unchecked methods
   these were originally added to improve yaxpeax-x86 testing:
   https://github.com/iximeow/yaxpeax-x86/pull/17, but are being pulled into
   yaxpeax-arch as they're generally applicable and overall wonderful tools.
   thank you again 522!
+
+made VecSink's `records` private. instead of extracting records from the struct
+  by accessing this field directly, call `VecSink::into_inner()`.
+
+made VecSink is now available through the `alloc` feature flag as well as `std`.
 
 ## 0.2.8
 

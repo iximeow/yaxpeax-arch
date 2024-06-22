@@ -94,24 +94,34 @@ impl<T> DescriptionSink<T> for NullSink {
     fn record(&mut self, _start: u32, _end: u32, _description: T) { }
 }
 
-#[cfg(feature = "std")]
-pub struct VecSink<T: Clone + Display> {
-    pub records: std::vec::Vec<(u32, u32, T)>
-}
+#[cfg(feature = "alloc")]
+mod vec_sink {
+    use alloc::vec::Vec;
+    use core::fmt::Display;
+    use crate::annotation::DescriptionSink;
 
-#[cfg(feature = "std")]
-impl<T: Clone + Display> VecSink<T> {
-    pub fn new() -> Self {
-        VecSink { records: std::vec::Vec::new() }
+    pub struct VecSink<T: Clone + Display> {
+        pub records: Vec<(u32, u32, T)>
+    }
+
+    impl<T: Clone + Display> VecSink<T> {
+        pub fn new() -> Self {
+            VecSink { records: Vec::new() }
+        }
+
+        pub fn into_inner(self) -> Vec<(u32, u32, T)> {
+            self.records
+        }
+    }
+
+    impl<T: Clone + Display> DescriptionSink<T> for VecSink<T> {
+        fn record(&mut self, start: u32, end: u32, description: T) {
+            self.records.push((start, end, description));
+        }
     }
 }
-
-#[cfg(feature = "std")]
-impl<T: Clone + Display> DescriptionSink<T> for VecSink<T> {
-    fn record(&mut self, start: u32, end: u32, description: T) {
-        self.records.push((start, end, description));
-    }
-}
+#[cfg(feature = "alloc")]
+pub use vec_sink::VecSink;
 
 pub trait FieldDescription {
     fn id(&self) -> u32;
