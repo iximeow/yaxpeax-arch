@@ -24,9 +24,18 @@ pub use color::{Colorize, NoColors, YaxColors};
 #[cfg(feature="colors")]
 pub use color::ColorSettings;
 
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
+#[cfg(feature = "alloc")]
 pub mod display;
+
+pub mod testkit;
+
 mod reader;
 pub use reader::{Reader, ReaderBuilder, ReadError, U8Reader, U16le, U16be, U32le, U32be, U64le, U64be};
+
+pub mod safer_unchecked;
 
 /// the minimum set of errors a `yaxpeax-arch` disassembler may produce.
 ///

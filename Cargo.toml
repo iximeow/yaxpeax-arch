@@ -23,9 +23,11 @@ thiserror = "1.0.26"
 lto = true
 
 [features]
-default = ["std", "use-serde", "colors", "address-parse"]
+default = ["std", "alloc", "use-serde", "colors", "address-parse"]
 
-std = []
+std = ["alloc"]
+
+alloc = []
 
 # enables the (optional) use of Serde for bounds on
 # Arch and Arch::Address
