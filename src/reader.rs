@@ -24,8 +24,9 @@ pub enum ReadError {
 /// isn't a multiple of 8 bits, `U8Reader` won't be sufficient.
 pub trait Reader<Address, Item> {
     fn next(&mut self) -> Result<Item, ReadError>;
-    /// read `buf`-many items from this reader in bulk. if `Reader` cannot read `buf`-many items,
-    /// return `ReadError::ExhaustedInput`.
+    /// read `buf`-many items from this reader in bulk.
+    ///
+    /// if `Reader` cannot read `buf`-many items, return `ReadError::ExhaustedInput`.
     fn next_n(&mut self, buf: &mut [Item]) -> Result<(), ReadError>;
     /// mark the current position as where to measure `offset` against.
     fn mark(&mut self);

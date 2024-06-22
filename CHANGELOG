@@ -1,8 +1,34 @@
+## TODO
+
+~~TODO: Reader::next_n should return the number of items read as Err(ReadError::Incomplete(n)) if the buffer is exhausted~~
+* a reader's `.offset()` should reflect the amount of items that were consumed, if any. if a reader can quickly determine
+  there is not enough input, should it return Incomplete(0) or ExhaustedInput? Incomplete(0) vs ExhaustedInput may still
+  imply that some state was changed (an access mode, for example). this needs more thought.
+TODO: Reader::offset should return an AddressDiff<Address>, not a bare Address
+* quick look seems reasonable enough, should be changed in concert with
+  yaxpeax-core though and that's more than i'm signing up for today
+TODO: impls of `fn one` and `fn zero` so downstream users don't have to import num_traits directly
+* seems nice at first but this means that there are conflicting functions when Zero or One are in scope
+  ... assuming that the idea at the time was to add `fn one` and `fn zero` to `AddressBase`.
+
 ## 0.3.0
 
-TODO: Reader::next_n should return the number of items read as Err(ReadError::Incomplete(n)) if the buffer is exhausted
-TODO: Reader::offset should return an AddressDiff<Address>, not a bare Address
-TODO: impls of `fn one` and `fn zero` so downstream users don't have to import num_traits directly
+added `yaxpeax_arch::display::DisplaySink` after revisiting output colorization.
+  `DisplaySink` is better suited for general markup, rather than being focused
+  specifically on ANSI/console text coloring. `YaxColors` also simply does not
+  style text in some unfortunate circumstances, such as when the console that
+  needs to be styled is only written to after intermediate buffering.
+
+`DisplaySink` also includes specializable functions for writing text to an
+output, and the implementation for `alloc::string::String` takes advantage of
+this: writing through `impl DisplaySink for String` will often be substantially
+more performant than writing through `fmt::Write`.
+
+added `yaxpeax_arch::safer_unchecked` to aid in testing use of unchecked methods
+  these were originally added to improve yaxpeax-x86 testing:
+  https://github.com/iximeow/yaxpeax-x86/pull/17, but are being pulled into
+  yaxpeax-arch as they're generally applicable and overall wonderful tools.
+  thank you again 522!
 
 ## 0.2.8
 
