@@ -38,7 +38,7 @@ pub mod safer_unchecked;
 
 /// the minimum set of errors a `yaxpeax-arch` disassembler may produce.
 ///
-/// it is permissible for an implementor of `DecodeError` to have items that return `false` for
+/// it is permissible for an implementer of `DecodeError` to have items that return `false` for
 /// all these functions; decoders are permitted to error in way that `yaxpeax-arch` does not know
 /// about.
 pub trait DecodeError: PartialEq + Display + Debug + Send + Sync + 'static {
@@ -50,12 +50,12 @@ pub trait DecodeError: PartialEq + Display + Debug + Send + Sync + 'static {
     /// generally indicate an issue with the instruction itself. this is in contrast to one
     /// specific operand being invalid for the instruction, or some other issue to do with decoding
     /// data beyond the top-level instruction. the "opcode"/"operand" distinction is often fuzzy
-    /// and left as best-effort for decoder implementors.
+    /// and left as best-effort for decoder implementers.
     fn bad_opcode(&self) -> bool;
     /// did the decoder error because an operand of the instruction to decode is invalid?
     ///
     /// similar to [`DecodeError::bad_opcode`], this is a subjective distinction and best-effort on
-    /// the part of implementors.
+    /// the part of implementers.
     fn bad_operand(&self) -> bool;
     /// a human-friendly description of this decode error.
     fn description(&self) -> &'static str;
@@ -160,7 +160,7 @@ pub trait Decoder<A: Arch + ?Sized> {
     /// SAFETY:
     ///
     /// while `inst` MUST be left in a state that does not violate Rust's safety guarantees,
-    /// implementors are NOT obligated to leave `inst` in a semantically meaningful state if
+    /// implementers are NOT obligated to leave `inst` in a semantically meaningful state if
     /// decoding fails. if `decode_into` returns an error, callers may find contradictory and
     /// useless information in `inst`, as well as *stale data* from whatever was passed in.
     fn decode_into<T: Reader<A::Address, A::Word>>(&self, inst: &mut A::Instruction, words: &mut T) -> Result<(), A::DecodeError>;

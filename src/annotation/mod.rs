@@ -76,7 +76,7 @@ use crate::{Arch, Reader};
 
 use core::fmt::Display;
 
-/// implementors of `DescriptionSink` receive descriptions of an instruction's disassembly process
+/// implementers of `DescriptionSink` receive descriptions of an instruction's disassembly process
 /// and relevant offsets in the bitstream being decoded. descriptions are archtecture-specific, and
 /// architectures are expected to be able to turn the bit-level `start` and `width` values into a
 /// meaningful description of bits in the original instruction stream.
@@ -131,7 +131,7 @@ pub trait FieldDescription {
 /// an interface to decode [`Arch::Instruction`] words from a reader of [`Arch::Word`]s, with the
 /// decoder able to report descriptions of bits or fields in the instruction to a sink implementing
 /// [`DescriptionSink`]. the sink may be [`NullSink`] to discard provided data. decoding with a
-/// `NullSink` should behave identically to `Decoder::decode_into`. implementors are recommended to
+/// `NullSink` should behave identically to `Decoder::decode_into`. implementers are recommended to
 /// implement `Decoder::decode_into` as a call to `AnnotatingDecoder::decode_with_annotation` if
 /// implementing both traits.
 pub trait AnnotatingDecoder<A: Arch + ?Sized> {
