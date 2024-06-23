@@ -154,7 +154,7 @@ mod ansi {
             fn span_end_function_expr(&mut self) { self.restore_prev_color() }
         }
     }
-    #[cfg(alloc)]
+    #[cfg(feature="alloc")]
     pub use ansi_display_sink::AnsiDisplaySink;
 }
 
