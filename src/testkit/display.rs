@@ -20,6 +20,20 @@ pub struct DisplaySinkValidator {
     spans: alloc::vec::Vec<&'static str>,
 }
 
+impl DisplaySinkValidator {
+    pub fn new() -> Self {
+        Self { spans: alloc::vec::Vec::new() }
+    }
+}
+
+impl core::ops::Drop for DisplaySinkValidator {
+    fn drop(&mut self) {
+        if self.spans.len() != 0 {
+            panic!("DisplaySinkValidator dropped with open spans");
+        }
+    }
+}
+
 impl fmt::Write for DisplaySinkValidator {
     fn write_str(&mut self, _s: &str) -> Result<(), fmt::Error> {
         Ok(())
