@@ -23,7 +23,7 @@ thiserror = "1.0.26"
 lto = true
 
 [features]
-default = ["std", "alloc", "use-serde", "colors", "address-parse"]
+default = ["std", "alloc", "use-serde", "color-new", "address-parse"]
 
 std = ["alloc"]
 
@@ -33,6 +33,14 @@ alloc = []
 # Arch and Arch::Address
 use-serde = ["serde", "serde_derive"]
 
+# feature flag for the existing but misfeature'd initial support for output
+# coloring.  the module this gates will be removed in 0.4.0, which includes
+# removing `trait Colorize`, and requires a major version bump for any
+# dependency that moves forward.
 colors = ["crossterm"]
+
+# feature flag for revised output colorizing support, which will replace the
+# existing `colors` feature in 0.4.0.
+color-new = []
 
 address-parse = []

@@ -44,36 +44,36 @@ pub enum NumberStyleHint {
 }
 
 #[deprecated(since="0.3.0", note="format_number_i32 is both slow and incorrect: YaxColors may not result in correct styling when writing anywhere other than a terminal, and both stylin and formatting does not inline as well as initially expected. see DisplaySink instead.")]
-pub fn format_number_i32<W: fmt::Write, Y: YaxColors>(colors: &Y, f: &mut W, i: i32, hint: NumberStyleHint) -> fmt::Result {
+pub fn format_number_i32<W: fmt::Write, Y: YaxColors>(_colors: &Y, f: &mut W, i: i32, hint: NumberStyleHint) -> fmt::Result {
     match hint {
         NumberStyleHint::Signed => {
-            write!(f, "{}", colors.number(i))
+            write!(f, "{}", (i))
         },
         NumberStyleHint::HexSigned => {
-            write!(f, "{}", colors.number(signed_i32_hex(i)))
+            write!(f, "{}", signed_i32_hex(i))
         },
         NumberStyleHint::Unsigned => {
-            write!(f, "{}", colors.number(i as u32))
+            write!(f, "{}", i as u32)
         },
         NumberStyleHint::HexUnsigned => {
-            write!(f, "{}", colors.number(u32_hex(i as u32)))
+            write!(f, "{}", u32_hex(i as u32))
         },
         NumberStyleHint::SignedWithSignSplit => {
             if i == core::i32::MIN {
-                write!(f, "- {}", colors.number("2147483647"))
+                write!(f, "- {}", "2147483647")
             } else if i < 0 {
-                write!(f, "- {}", colors.number(-Wrapping(i)))
+                write!(f, "- {}", -Wrapping(i))
             } else {
-                write!(f, "+ {}", colors.number(i))
+                write!(f, "+ {}", i)
             }
         }
         NumberStyleHint::HexSignedWithSignSplit => {
             if i == core::i32::MIN {
-                write!(f, "- {}", colors.number("0x7fffffff"))
+                write!(f, "- {}", ("0x7fffffff"))
             } else if i < 0 {
-                write!(f, "- {}", colors.number(u32_hex((-Wrapping(i)).0 as u32)))
+                write!(f, "- {}", u32_hex((-Wrapping(i)).0 as u32))
             } else {
-                write!(f, "+ {}", colors.number(u32_hex(i as u32)))
+                write!(f, "+ {}", u32_hex(i as u32))
             }
         },
         NumberStyleHint::HexSignedWithSign => {

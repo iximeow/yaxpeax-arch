@@ -17,6 +17,7 @@ Build.run({"cargo", "test", "--no-default-features", "--tests", "--features", "c
 Build.run({"cargo", "test", "--no-default-features", "--tests", "--features", "use-serde"}, {name="test feature combinations"})
 Build.run({"cargo", "test", "--no-default-features", "--tests", "--features", "address-parse"}, {name="test feature combinations"})
 Build.run({"cargo", "test", "--no-default-features", "--tests", "--features", "alloc"}, {name="test feature combinations"})
+Build.run({"cargo", "test", "--no-default-features", "--tests", "--features", "color-new"}, {name="test feature combinations"})
 Build.run({"cargo", "test", "--no-default-features", "--tests", "--features", "std,colors"}, {name="test feature combinations"})
 Build.run({"cargo", "test", "--no-default-features", "--tests", "--features", "std,use-serde"}, {name="test feature combinations"})
 Build.run({"cargo", "test", "--no-default-features", "--tests", "--features", "std,address-parse"}, {name="test feature combinations"})
@@ -27,3 +28,4 @@ Build.run({"cargo", "test", "--no-default-features", "--tests", "--features", "s
 Build.run({"cargo", "test", "--no-default-features", "--tests", "--features", "std,colors,address-parse,alloc"}, {name="test feature combinations"})
 Build.run({"cargo", "test", "--no-default-features", "--tests", "--features", "std,use-serde,colors"}, {name="test feature combinations"})
 Build.run({"cargo", "test", "--no-default-features", "--tests", "--features", "std,use-serde,colors,alloc"}, {name="test feature combinations"})
+Build.run({"cargo", "test", "--no-default-features", "--tests", "--features", "color-new,alloc"}, {name="test feature combinations"})

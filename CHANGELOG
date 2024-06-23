@@ -40,6 +40,27 @@ made VecSink's `records` private. instead of extracting records from the struct
 
 made VecSink is now available through the `alloc` feature flag as well as `std`.
 
+significantly reduced `mod colored`:
+  generally, colorization of text is a presentation issue; `trait Colorize`
+  mixed formatting of data to text with how that text is presented, but that is
+  at odds with the same text being presented in different ways for which
+  colorization is not generic. for example, rendering an instruction as marked
+  up HTML involves coloring in an entirely different way than rendering an
+  instruction with ANSI sequences for a VT100-like terminal.
+
+  the changes to `mod colored` reflect this, and rely on impls of `DisplaySink`
+  to know what they are displaying into and what is the correct mechanism to
+  present styled text.
+
+  with this in mind:
+  * the module `yaxpeax_arch::color` now only exists with the `colors` feature
+  * removed `color::Colorize`, `color::Colored`
+  * `enum Colored` is closest in spirit to `enum Color`
+  * `trait YaxColors` no longer takes displayable types in its functions, no longer returns displayable types.
+  * `trait YaxColors`' sole function is as an inlining-friendly settings
+    mechanism for `DisplaySink` impls that care about coloring output
+  * dropped dependency on `crossterm`
+
 ## 0.2.8
 
 added an impl of `From<ReadError>` for `StandardPartialDecoderError`, matching the existing `StandardDecodeError` impl.

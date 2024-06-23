@@ -1,12 +1,14 @@
 #![no_std]
 #![doc = include_str!("../README.md")]
 
+#[cfg(feature = "alloc")]
+extern crate alloc;
+
 use core::fmt::{self, Debug, Display};
 use core::hash::Hash;
 
 #[cfg(feature="use-serde")]
 #[macro_use] extern crate serde_derive;
-
 #[cfg(feature="use-serde")]
 use serde::{Serialize, Deserialize};
 
@@ -18,23 +20,21 @@ pub use address::AddrParse;
 
 pub mod annotation;
 
+#[deprecated(since="0.3.0", note="yaxpeax_arch::color conflates output mechanism and styling, leaving it brittle and overly-restrictive. see `yaxpeax_arch::color_new`, which will replace `color` in a future version.")]
 mod color;
+#[allow(deprecated)] // allow exporting the deprecated items here to not break downstreams even further...
 pub use color::{Colorize, NoColors, YaxColors};
-
-#[cfg(feature="colors")]
-pub use color::ColorSettings;
-
-#[cfg(feature = "alloc")]
-extern crate alloc;
+#[cfg(feature="color-new")]
+pub mod color_new;
 
 pub mod display;
-
-pub mod testkit;
 
 mod reader;
 pub use reader::{Reader, ReaderBuilder, ReadError, U8Reader, U16le, U16be, U32le, U32be, U64le, U64be};
 
 pub mod safer_unchecked;
+
+pub mod testkit;
 
 /// the minimum set of errors a `yaxpeax-arch` disassembler may produce.
 ///
@@ -235,6 +235,8 @@ pub trait Instruction {
     fn well_defined(&self) -> bool;
 }
 
+#[allow(deprecated)]
+#[deprecated(since="0.3.0", note="ShowContextual ties YaxColors and fmt::Write in a way that only sometimes composes. simultaneously, it is too generic on Ctx, making it difficult to implement and use. it will be revisited in the future.")]
 pub trait ShowContextual<Addr, Ctx: ?Sized, T: fmt::Write, Y: YaxColors> {
     fn contextualize(&self, colors: &Y, address: Addr, context: Option<&Ctx>, out: &mut T) -> fmt::Result;
 }
