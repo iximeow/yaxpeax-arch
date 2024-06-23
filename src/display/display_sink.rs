@@ -430,7 +430,7 @@ mod instruction_text_sink {
                 // `InstructionTextSink::write_char` is only used by yaxpeax-x86, and is only used to
                 // write single ASCII characters. this is wrong in the general case, but `write_char`
                 // here is not going to be used in the general case.
-                if cfg!(debug_asertions) {
+                if cfg!(debug_assertions) {
                     panic!("InstructionTextSink::write_char would truncate output");
                 }
                 let to_push = c as u8;

@@ -74,6 +74,8 @@ mod ansi {
         }
     }
 
+    // could reasonably be always present, but only used if feature="alloc"
+    #[cfg(feature="alloc")]
     const DEFAULT_FG: &'static str = "\x1b[39m";
 
     #[cfg(feature="alloc")]
