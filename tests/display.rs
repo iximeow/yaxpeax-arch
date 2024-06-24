@@ -19,6 +19,35 @@ fn formatters_are_not_feature_gated() {
 
 #[cfg(feature="alloc")]
 #[test]
+fn instruction_text_sink_write_char_requires_ascii() {
+    use core::fmt::Write;
+
+    let mut text = String::with_capacity(512);
+    let mut sink = unsafe {
+        yaxpeax_arch::display::InstructionTextSink::new(&mut text)
+    };
+    let expected = "`1234567890-=+_)(*&^%$#@!~\\][poiuytrewq	|}{POIUYTREWQ';lkjhgfdsa\":LKJHGFDSA/.,mnbvcxz?><MNBVCXZ \r\n";
+    for c in expected.as_bytes().iter() {
+        sink.write_char(*c as char).expect("write works");
+    }
+    assert_eq!(text, expected);
+}
+
+#[cfg(feature="alloc")]
+#[test]
+#[should_panic]
+fn instruction_text_sink_write_char_rejects_not_ascii() {
+    use core::fmt::Write;
+
+    let mut text = String::with_capacity(512);
+    let mut sink = unsafe {
+        yaxpeax_arch::display::InstructionTextSink::new(&mut text)
+    };
+    sink.write_char('\u{80}').expect("write works");
+}
+
+#[cfg(feature="alloc")]
+#[test]
 fn display_sink_write_hex_helpers() {
     use yaxpeax_arch::display::{DisplaySink};
 

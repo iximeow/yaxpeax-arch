@@ -453,7 +453,9 @@ mod instruction_text_sink {
                 // write single ASCII characters. this is wrong in the general case, but `write_char`
                 // here is not going to be used in the general case.
                 if cfg!(debug_assertions) {
-                    panic!("InstructionTextSink::write_char would truncate output");
+                    if c > '\x7f' {
+                        panic!("InstructionTextSink::write_char would truncate output");
+                    }
                 }
                 let to_push = c as u8;
                 // `ptr::write` here because `underlying.add(underlying.len())` may not point to an
