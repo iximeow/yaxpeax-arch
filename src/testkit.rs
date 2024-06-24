@@ -5,4 +5,6 @@
 //! [`yaxpeax_arch::display::DisplaySink`], but may grow in the future.
 
 #[cfg(feature="alloc")]
-pub mod display;
+mod display;
+#[cfg(feature="alloc")]
+pub use display::{DisplaySinkValidator, DisplaySinkWriteComparator};

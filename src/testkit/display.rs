@@ -147,6 +147,18 @@ pub struct DisplaySinkWriteComparator<'sinks, T: DisplaySink, U: DisplaySink> {
 }
 
 impl<'sinks, T: DisplaySink, U: DisplaySink> DisplaySinkWriteComparator<'sinks, T, U> {
+    pub fn new(
+        t: &'sinks mut T, t_check: fn(&T) -> &str,
+        u: &'sinks mut U, u_check: fn(&U) -> &str
+    ) -> Self {
+        Self {
+            sink1: t,
+            sink1_check: t_check,
+            sink2: u,
+            sink2_check: u_check,
+        }
+    }
+
     fn compare_sinks(&self) {
         let sink1_text = (self.sink1_check)(self.sink1);
         let sink2_text = (self.sink2_check)(self.sink2);

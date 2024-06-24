@@ -42,7 +42,57 @@ pub trait YaxColors {
     fn function(&self) -> Color;
 }
 
-mod ansi {
+/// support for colorizing text with ANSI control sequences.
+///
+/// the most useful item in this module is [`AnsiDisplaySink`], which interprets span entry and
+/// exit as points at which ANSI sequences may need to be written into the output it wraps - that
+/// output may be any type implementing [`DisplaySink`], including [`FmtSink`] to adapt any
+/// implementer of `fmt::Write` such as standard out.
+///
+/// ## example
+///
+/// to write colored text to standard out:
+///
+/// ```
+/// # #[cfg(feature="alloc")]
+/// # {
+/// # extern crate alloc;
+/// # use alloc::string::String;
+/// use yaxpeax_arch::color_new::DefaultColors;
+/// use yaxpeax_arch::color_new::ansi::AnsiDisplaySink;
+/// use yaxpeax_arch::display::FmtSink;
+///
+/// let mut s = String::new();
+/// let mut s_sink = FmtSink::new(&mut s);
+///
+/// let mut writer = AnsiDisplaySink::new(&mut s_sink, DefaultColors);
+///
+/// // this might be a yaxpeax crate's `display_into`, or other library implementation code
+/// mod fake_yaxpeax_crate {
+///     use yaxpeax_arch::display::DisplaySink;
+///
+///     pub fn format_memory_operand<T: DisplaySink>(out: &mut T) -> core::fmt::Result {
+///         out.span_start_immediate();
+///         out.write_prefixed_u8(0x80)?;
+///         out.span_end_immediate();
+///         out.write_fixed_size("(")?;
+///         out.span_start_register();
+///         out.write_fixed_size("rbp")?;
+///         out.span_end_register();
+///         out.write_fixed_size(")")?;
+///         Ok(())
+///     }
+/// }
+///
+/// // this might be how a user uses `AnsiDisplaySink`, which will write ANSI-ful text to `s` and
+/// // print it.
+///
+/// fake_yaxpeax_crate::format_memory_operand(&mut writer).expect("write succeeds");
+///
+/// println!("{}", s);
+/// # }
+/// ```
+pub mod ansi {
     use crate::color_new::Color;
 
     // color sequences as described by ECMA-48 and, apparently, `man 4 console_codes`
@@ -97,17 +147,26 @@ mod ansi {
         /// type, so the only available error mechanism would be to also `abort()`.
         ///
         /// if this turns out to be a bad decision, it'll have to be rethought!
-        struct AnsiDisplaySink<'sink, T: DisplaySink, Y: YaxColors> {
+        pub struct AnsiDisplaySink<'sink, T: DisplaySink, Y: YaxColors> {
             out: &'sink mut T,
             span_stack: alloc::vec::Vec<Color>,
             colors: Y
         }
 
         impl<'sink, T: DisplaySink, Y: YaxColors> AnsiDisplaySink<'sink, T, Y> {
+            pub fn new(out: &'sink mut T, colors: Y) -> Self {
+                Self {
+                    out,
+                    span_stack: alloc::vec::Vec::new(),
+                    colors,
+                }
+            }
+
             fn push_color(&mut self, color: Color) {
                 self.span_stack.push(color);
                 let _ = self.out.write_fixed_size(super::color2ansi(color));
             }
+
             fn restore_prev_color(&mut self) {
                 let _ = self.span_stack.pop();
                 if let Some(prev_color) = self.span_stack.last() {

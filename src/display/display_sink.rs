@@ -350,6 +350,10 @@ impl<'a, T: fmt::Write> FmtSink<'a, T> {
     pub fn new(f: &'a mut T) -> Self {
         Self { out: f }
     }
+
+    pub fn inner_ref(&self) -> &T {
+        &self.out
+    }
 }
 
 /// blanket impl that discards all span information, forwards writes to the underlying `fmt::Write`
