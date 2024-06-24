@@ -24,23 +24,24 @@ added `yaxpeax_arch::display::DisplaySink` after revisiting output colorization.
   style text in some unfortunate circumstances, such as when the console that
   needs to be styled is only written to after intermediate buffering.
 
-`DisplaySink` also includes specializable functions for writing text to an
+  `DisplaySink` also includes specializable functions for writing text to an
   output, and the implementation for `alloc::string::String` takes advantage of
   this: writing through `impl DisplaySink for String` will often be substantially
   more performant than writing through `fmt::Write`.
 
-added `yaxpeax_arch::safer_unchecked` to aid in testing use of unchecked methods
-  these were originally added to improve yaxpeax-x86 testing:
-  https://github.com/iximeow/yaxpeax-x86/pull/17, but are being pulled into
-  yaxpeax-arch as they're generally applicable and overall wonderful tools.
-  thank you again 522!
+added `mod color_new`:
+  this includes an alternate vision for `YaxColors` and better fits with the
+  new `DisplaySink` machinery; ANSI-style text markup can be done through the
+  new `yaxpeax_arch::color_new::ansi::AnsiDisplaySink`.
 
-made VecSink's `records` private. instead of extracting records from the struct
-  by accessing this field directly, call `VecSink::into_inner()`.
+  this provides more flexibility than i'd initially expected! yours truly will
+  be using this to render instructions with HTML spans (rather than ANSI
+  sequences) to colorize dis.yaxpeax.net.
 
-made VecSink is now available through the `alloc` feature flag as well as `std`.
+  in the future, `mod colored` will be removed, `mod color_new` will be renamed
+  to `mod color`.
 
-significantly reduced `mod colored`:
+deprecated `mod colored`:
   generally, colorization of text is a presentation issue; `trait Colorize`
   mixed formatting of data to text with how that text is presented, but that is
   at odds with the same text being presented in different ways for which
@@ -48,18 +49,30 @@ significantly reduced `mod colored`:
   up HTML involves coloring in an entirely different way than rendering an
   instruction with ANSI sequences for a VT100-like terminal.
 
-  the changes to `mod colored` reflect this, and rely on impls of `DisplaySink`
-  to know what they are displaying into and what is the correct mechanism to
-  present styled text.
+added `yaxpeax_arch::safer_unchecked` to aid in testing use of unchecked methods
+  these were originally added to improve yaxpeax-x86 testing:
+  https://github.com/iximeow/yaxpeax-x86/pull/17, but are being pulled into
+  yaxpeax-arch as they're generally applicable and overall wonderful tools.
+  thank you again 522!
 
-  with this in mind:
-  * the module `yaxpeax_arch::color` now only exists with the `colors` feature
-  * removed `color::Colorize`, `color::Colored`
-  * `enum Colored` is closest in spirit to `enum Color`
-  * `trait YaxColors` no longer takes displayable types in its functions, no longer returns displayable types.
-  * `trait YaxColors`' sole function is as an inlining-friendly settings
-    mechanism for `DisplaySink` impls that care about coloring output
-  * dropped dependency on `crossterm`
+added `mod testkit`:
+  this module contains tools to validate the correctness of crates implementing
+  `yaxpeax-arch` traits. these initial tools are focused on validating the
+  correctness of functions that write to `DisplaySink`, especially that span
+  management is correct.
+
+  `yaxpeax-x86`, for example, will imminently have fuzz targets to use these
+  types for its own validation.
+
+made VecSink's `records` private. instead of extracting records from the struct
+  by accessing this field directly, call `VecSink::into_inner()`.
+
+made VecSink is now available through the `alloc` feature flag as well as `std`.
+
+meta: the major omission in this release is an architecture-agnostic way to
+format an instruction into a `DisplaySink`. i haven't been able to figure out
+quite the right shape for that! it is fully expected in the future, and will
+probably end up somehow referenced through `yaxpeax_arch::Arch`.
 
 ## 0.2.8
 
