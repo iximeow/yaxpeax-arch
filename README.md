@@ -9,7 +9,8 @@ typically this crate is only interesting if you're writing code to operate on mu
 
 `yaxpeax-arch` has several crate features, which implementers are encouraged to also support:
 * `std`: opt-in for `std`-specific support - in this crate, `std` enables a [`std::error::Error`](https://doc.rust-lang.org/std/error/trait.Error.html) requirement on `DecodeError`, allowing users to `?`-unwrap decode results.
-* `colors`: enables (optional) [`crossterm`](https://docs.rs/crossterm/latest/crossterm/)-based ANSI colorization. default coloring rules are defined by [`ColorSettings`](https://docs.rs/yaxpeax-arch/latest/yaxpeax_arch/struct.ColorSettings.html), when enabled.
+* `color_new`: enables traits and structs to stylize formatted instructions, including ANSI colorization.
+* ~`colors`~: DEPRECATED. enables (optional) [`crossterm`](https://docs.rs/crossterm/latest/crossterm/)-based ANSI colorization. default coloring rules are defined by [`ColorSettings`](https://docs.rs/yaxpeax-arch/latest/yaxpeax_arch/struct.ColorSettings.html), when enabled.
 * `address-parse`: enable a requirement that `yaxpeax_arch::Address` be parsable from `&str`. this is useful for use cases that, for example, read addresses from humans.
 * `use-serde`: enable [`serde`](https://docs.rs/serde/latest/serde/) serialization and deserialization bounds for types like `Address`.
 
