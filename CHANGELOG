@@ -10,6 +10,8 @@ TODO: Reader::offset should return an AddressDiff<Address>, not a bare Address
 TODO: impls of `fn one` and `fn zero` so downstream users don't have to import num_traits directly
 * seems nice at first but this means that there are conflicting functions when Zero or One are in scope
   ... assuming that the idea at the time was to add `fn one` and `fn zero` to `AddressBase`.
+TODO: 0.4.0 or later:
+  * remove `mod colors`, crossterm dependency, related feature flags
 
 ## 0.3.0
 
