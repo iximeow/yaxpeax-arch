@@ -1,5 +1,17 @@
 use core::fmt;
 
+// `imp_x86.rs` has `asm!()` macros, and so is not portable at all.
+#[cfg(feature="alloc")]
+#[cfg(target_arch = "x86_64")]
+#[path="./display_sink/imp_x86.rs"]
+mod imp;
+
+// for other architectures, fall back on possibly-slower portable functions.
+#[cfg(not(target_arch = "x86_64"))]
+#[path="./display_sink/imp_generic.rs"]
+mod imp;
+
+
 /// `DisplaySink` allows client code to collect output and minimal markup. this is currently used
 /// in formatting instructions for two reasons:
 /// * `DisplaySink` implementations have the opportunity to collect starts and ends of tokens at
@@ -377,7 +389,6 @@ mod instruction_text_sink {
     use core::fmt;
 
     use super::{DisplaySink, u8_to_hex};
-    use crate::safer_unchecked::unreachable_kinda_unchecked;
 
     /// this is an implementation detail of yaxpeax-arch and related crates. if you are a user of the
     /// disassemblers, do not use this struct. do not depend on this struct existing. this struct is
@@ -503,7 +514,7 @@ mod instruction_text_sink {
 
             // Safety: `new` requires callers promise there is enough space to hold `s`.
             unsafe {
-                super::append_helpers::append_string_lt_32_unchecked(&mut self.buf, s);
+                super::imp::append_string_lt_32_unchecked(&mut self.buf, s);
             }
 
             Ok(())
@@ -517,7 +528,7 @@ mod instruction_text_sink {
 
             // Safety: `new` requires callers promise there is enough space to hold `s`.
             unsafe {
-                super::append_helpers::append_string_lt_16_unchecked(&mut self.buf, s);
+                super::imp::append_string_lt_16_unchecked(&mut self.buf, s);
             }
 
             Ok(())
@@ -531,7 +542,7 @@ mod instruction_text_sink {
 
             // Safety: `new` requires callers promise there is enough space to hold `s`.
             unsafe {
-                super::append_helpers::append_string_lt_8_unchecked(&mut self.buf, s);
+                super::imp::append_string_lt_8_unchecked(&mut self.buf, s);
             }
 
             Ok(())
@@ -748,9 +759,6 @@ pub use instruction_text_sink::InstructionTextSink;
 #[cfg(feature = "alloc")]
 use crate::display::u8_to_hex;
 
-#[cfg(feature = "alloc")]
-use crate::safer_unchecked::unreachable_kinda_unchecked;
-
 /// this [`DisplaySink`] impl exists to support somewhat more performant buffering of the kinds of
 /// strings `yaxpeax-x86` uses in formatting instructions.
 ///
@@ -796,7 +804,7 @@ impl DisplaySink for alloc::string::String {
 
         // Safety: we have reserved enough space for `s`.
         unsafe {
-            append_helpers::append_string_lt_32_unchecked(self, s);
+            imp::append_string_lt_32_unchecked(self, s);
         }
 
         Ok(())
@@ -806,7 +814,7 @@ impl DisplaySink for alloc::string::String {
 
         // Safety: we have reserved enough space for `s`.
         unsafe {
-            append_helpers::append_string_lt_16_unchecked(self, s);
+            imp::append_string_lt_16_unchecked(self, s);
         }
 
         Ok(())
@@ -816,7 +824,7 @@ impl DisplaySink for alloc::string::String {
 
         // Safety: we have reserved enough space for `s`.
         unsafe {
-            append_helpers::append_string_lt_8_unchecked(self, s);
+            imp::append_string_lt_8_unchecked(self, s);
         }
 
         Ok(())
@@ -1004,199 +1012,5 @@ impl DisplaySink for alloc::string::String {
         }
 
         Ok(())
-    }
-}
-
-#[cfg(feature="alloc")]
-mod append_helpers {
-    /// append `data` to `buf`, assuming `data` is less than 8 bytes and that `buf` has enough space
-    /// remaining to hold all bytes in `data`.
-    ///
-    /// Safety: callers must ensure that `buf.capacity() - buf.len() >= data.len()`.
-    #[inline(always)]
-    pub unsafe fn append_string_lt_8_unchecked(buf: &mut alloc::string::String, data: &str) {
-        // Safety: we are appending only valid utf8 strings to `self.buf`, as `s` is known to
-        // be valid utf8
-        let buf = unsafe { buf.as_mut_vec() };
-        let new_bytes = data.as_bytes();
-
-        // should get DCE
-        if new_bytes.len() >= 8 {
-            unsafe { core::hint::unreachable_unchecked() }
-        }
-
-        unsafe {
-            let dest = buf.as_mut_ptr().offset(buf.len() as isize);
-            let src = new_bytes.as_ptr();
-
-            let rem = new_bytes.len() as isize;
-
-            // set_len early because there is no way to avoid the following asm!() writing that
-            // same number of bytes into buf
-            buf.set_len(buf.len() + new_bytes.len());
-
-            core::arch::asm!(
-                "8:",
-                "cmp {rem:e}, 4",
-                "jb 9f",
-                "mov {buf:e}, dword ptr [{src} + {rem} - 4]",
-                "mov dword ptr [{dest} + {rem} - 4], {buf:e}",
-                "sub {rem:e}, 4",
-                "jz 11f",
-                "9:",
-                "cmp {rem:e}, 2",
-                "jb 10f",
-                "mov {buf:x}, word ptr [{src} + {rem} - 2]",
-                "mov word ptr [{dest} + {rem} - 2], {buf:x}",
-                "sub {rem:e}, 2",
-                "jz 11f",
-                "10:",
-                "cmp {rem:e}, 1",
-                "jb 11f",
-                "mov {buf:l}, byte ptr [{src} + {rem} - 1]",
-                "mov byte ptr [{dest} + {rem} - 1], {buf:l}",
-                "11:",
-                src = in(reg) src,
-                dest = in(reg) dest,
-                rem = inout(reg) rem => _,
-                buf = out(reg) _,
-                options(nostack),
-            );
-        }
-    }
-
-    /// append `data` to `buf`, assuming `data` is less than 16 bytes and that `buf` has enough space
-    /// remaining to hold all bytes in `data`.
-    ///
-    /// Safety: callers must ensure that `buf.capacity() - buf.len() >= data.len()`.
-    #[inline(always)]
-    pub unsafe fn append_string_lt_16_unchecked(buf: &mut alloc::string::String, data: &str) {
-        // Safety: we are appending only valid utf8 strings to `self.buf`, as `s` is known to
-        // be valid utf8
-        let buf = unsafe { buf.as_mut_vec() };
-        let new_bytes = data.as_bytes();
-
-        // should get DCE
-        if new_bytes.len() >= 16 {
-            unsafe { core::hint::unreachable_unchecked() }
-        }
-
-        unsafe {
-            let dest = buf.as_mut_ptr().offset(buf.len() as isize);
-            let src = new_bytes.as_ptr();
-
-            let rem = new_bytes.len() as isize;
-
-            // set_len early because there is no way to avoid the following asm!() writing that
-            // same number of bytes into buf
-            buf.set_len(buf.len() + new_bytes.len());
-
-            core::arch::asm!(
-                "7:",
-                "cmp {rem:e}, 8",
-                "jb 8f",
-                "mov {buf:r}, qword ptr [{src} + {rem} - 8]",
-                "mov qword ptr [{dest} + {rem} - 8], {buf:r}",
-                "sub {rem:e}, 8",
-                "jz 11f",
-                "8:",
-                "cmp {rem:e}, 4",
-                "jb 9f",
-                "mov {buf:e}, dword ptr [{src} + {rem} - 4]",
-                "mov dword ptr [{dest} + {rem} - 4], {buf:e}",
-                "sub {rem:e}, 4",
-                "jz 11f",
-                "9:",
-                "cmp {rem:e}, 2",
-                "jb 10f",
-                "mov {buf:x}, word ptr [{src} + {rem} - 2]",
-                "mov word ptr [{dest} + {rem} - 2], {buf:x}",
-                "sub {rem:e}, 2",
-                "jz 11f",
-                "10:",
-                "cmp {rem:e}, 1",
-                "jb 11f",
-                "mov {buf:l}, byte ptr [{src} + {rem} - 1]",
-                "mov byte ptr [{dest} + {rem} - 1], {buf:l}",
-                "11:",
-                src = in(reg) src,
-                dest = in(reg) dest,
-                rem = inout(reg) rem => _,
-                buf = out(reg) _,
-                options(nostack),
-            );
-        }
-    }
-
-    /// append `data` to `buf`, assuming `data` is less than 32 bytes and that `buf` has enough space
-    /// remaining to hold all bytes in `data`.
-    ///
-    /// Safety: callers must ensure that `buf.capacity() - buf.len() >= data.len()`.
-    #[inline(always)]
-    pub unsafe fn append_string_lt_32_unchecked(buf: &mut alloc::string::String, data: &str) {
-        // Safety: we are appending only valid utf8 strings to `self.buf`, as `s` is known to
-        // be valid utf8
-        let buf = unsafe { buf.as_mut_vec() };
-        let new_bytes = data.as_bytes();
-
-        // should get DCE
-        if new_bytes.len() >= 32 {
-            unsafe { core::hint::unreachable_unchecked() }
-        }
-
-        unsafe {
-            let dest = buf.as_mut_ptr().offset(buf.len() as isize);
-            let src = new_bytes.as_ptr();
-
-            let rem = new_bytes.len() as isize;
-
-            // set_len early because there is no way to avoid the following asm!() writing that
-            // same number of bytes into buf
-            buf.set_len(buf.len() + new_bytes.len());
-
-            core::arch::asm!(
-                "6:",
-                "cmp {rem:e}, 16",
-                "jb 7f",
-                "mov {buf:r}, qword ptr [{src} + {rem} - 16]",
-                "mov qword ptr [{dest} + {rem} - 16], {buf:r}",
-                "mov {buf:r}, qword ptr [{src} + {rem} - 8]",
-                "mov qword ptr [{dest} + {rem} - 8], {buf:r}",
-                "sub {rem:e}, 16",
-                "jz 11f",
-                "7:",
-                "cmp {rem:e}, 8",
-                "jb 8f",
-                "mov {buf:r}, qword ptr [{src} + {rem} - 8]",
-                "mov qword ptr [{dest} + {rem} - 8], {buf:r}",
-                "sub {rem:e}, 8",
-                "jz 11f",
-                "8:",
-                "cmp {rem:e}, 4",
-                "jb 9f",
-                "mov {buf:e}, dword ptr [{src} + {rem} - 4]",
-                "mov dword ptr [{dest} + {rem} - 4], {buf:e}",
-                "sub {rem:e}, 4",
-                "jz 11f",
-                "9:",
-                "cmp {rem:e}, 2",
-                "jb 10f",
-                "mov {buf:x}, word ptr [{src} + {rem} - 2]",
-                "mov word ptr [{dest} + {rem} - 2], {buf:x}",
-                "sub {rem:e}, 2",
-                "jz 11f",
-                "10:",
-                "cmp {rem:e}, 1",
-                "jb 11f",
-                "mov {buf:l}, byte ptr [{src} + {rem} - 1]",
-                "mov byte ptr [{dest} + {rem} - 1], {buf:l}",
-                "11:",
-                src = in(reg) src,
-                dest = in(reg) dest,
-                rem = inout(reg) rem => _,
-                buf = out(reg) _,
-                options(nostack),
-            );
-        }
     }
 }
