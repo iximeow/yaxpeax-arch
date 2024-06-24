@@ -135,6 +135,7 @@ impl DecodeError for StandardPartialDecoderError {
     }
 }
 
+/*
 #[derive(Copy, Clone)]
 struct NoDescription {}
 
@@ -143,6 +144,7 @@ impl fmt::Display for NoDescription {
         Ok(())
     }
 }
+*/
 
 /// an interface to decode [`Arch::Instruction`] words from a reader of [`Arch::Word`]s. errors are
 /// the architecture-defined [`DecodeError`] implemention.
