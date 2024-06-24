@@ -1,3 +1,15 @@
+//! `imp_x86` has specialized copies to append short strings to strings. buffer sizing must be
+//! handled by callers, in all cases.
+//!
+//! the structure of all implementations here is, essentially, to take the size of the data to
+//! append and execute a copy for each bit set in that size, from highest to lowest. some bits are
+//! simply never checked if the input is promised to never be that large - if a string to append is
+//! only 0..7 bytes long, it is sufficient to only look at the low three bits to copy all bytes.
+//!
+//! in this way, it is slightly more efficient to right-size which append function is used, if the
+//! maximum size of input strings can be bounded well. if the maximum size of input strings cannot
+//! be bounded, you shouldn't be using these functions.
+
 /// append `data` to `buf`, assuming `data` is less than 8 bytes and that `buf` has enough space
 /// remaining to hold all bytes in `data`.
 ///
