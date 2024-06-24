@@ -44,10 +44,10 @@ pub trait YaxColors {
 
 /// support for colorizing text with ANSI control sequences.
 ///
-/// the most useful item in this module is [`AnsiDisplaySink`], which interprets span entry and
-/// exit as points at which ANSI sequences may need to be written into the output it wraps - that
-/// output may be any type implementing [`DisplaySink`], including [`FmtSink`] to adapt any
-/// implementer of `fmt::Write` such as standard out.
+/// the most useful item in this module is [`ansi::AnsiDisplaySink`], which interprets span entry
+/// and exit as points at which ANSI sequences may need to be written into the output it wraps -
+/// that output may be any type implementing [`crate::display::DisplaySink`], including
+/// [`crate::display::FmtSink`] to adapt any implementer of `fmt::Write` such as standard out.
 ///
 /// ## example
 ///
@@ -136,7 +136,7 @@ pub mod ansi {
         /// adapter to insert ANSI color command sequences in formatted text to style printed
         /// instructions.
         ///
-        /// this enables similar behavior as the deprecated [`yaxpeax_arch::colors::Colorize`] trait,
+        /// this enables similar behavior as the deprecated [`crate::Colorize`] trait,
         /// for outputs that can process ANSI color commands.
         ///
         /// `AnsiDisplaySink` will silently ignore errors from writes to the underlying `T:

@@ -2,7 +2,7 @@
 //! described in this crate.
 //!
 //! currently, this only includes tools to validate correct use of
-//! [`yaxpeax_arch::display::DisplaySink`], but may grow in the future.
+//! [`crate::display::DisplaySink`], but may grow in the future.
 
 #[cfg(feature="alloc")]
 mod display;
