@@ -401,13 +401,19 @@ mod instruction_text_sink {
     /// ensuring that instruction formatting impls this buffer is passed to are appropriately sized.
     ///
     /// this is intended to be hidden in docs. if you see this in docs, it's a bug.
-#[doc(hidden)]
+    #[doc(hidden)]
     pub struct InstructionTextSink<'buf> {
         buf: &'buf mut alloc::string::String
     }
 
     impl<'buf> InstructionTextSink<'buf> {
-        // TODO: safety
+        /// create an `InstructionTextSink` using the provided buffer for storage.
+        ///
+        /// SAFETY: callers must ensure that this sink will never have more content written than
+        /// this buffer can hold. while the buffer may appear growable, `write_*` methods here may
+        /// *bypass bounds checks* and so will never trigger the buffer to grow. writing more data
+        /// than the buffer's size when provided to `new` will cause out-of-bounds writes and
+        /// memory corruption.
         pub unsafe fn new(buf: &'buf mut alloc::string::String) -> Self {
             Self { buf }
         }
@@ -423,6 +429,7 @@ mod instruction_text_sink {
                     panic!("InstructionTextSink::write_char would overflow output");
                 }
             }
+
             // SAFETY: `buf` is assumed to be long enough to hold all input, `buf` at `underlying.len()`
             // is valid for writing, but may be uninitialized.
             //
@@ -459,15 +466,13 @@ mod instruction_text_sink {
                 }
             }
 
+            // Safety: we are appending only valid utf8 strings to `self.buf`, as `s` is known to
+            // be valid utf8
             let buf = unsafe { self.buf.as_mut_vec() };
             let new_bytes = s.as_bytes();
 
             if new_bytes.len() == 0 {
                 return Ok(());
-            }
-
-            if new_bytes.len() >= 16 {
-                unsafe { unreachable_kinda_unchecked() }
             }
 
             unsafe {
@@ -495,6 +500,8 @@ mod instruction_text_sink {
                     panic!("InstructionTextSink::write_lt_32 would overflow output");
                 }
             }
+
+            // Safety: `new` requires callers promise there is enough space to hold `s`.
             unsafe {
                 super::append_helpers::append_string_lt_32_unchecked(&mut self.buf, s);
             }
@@ -508,6 +515,7 @@ mod instruction_text_sink {
                 }
             }
 
+            // Safety: `new` requires callers promise there is enough space to hold `s`.
             unsafe {
                 super::append_helpers::append_string_lt_16_unchecked(&mut self.buf, s);
             }
@@ -521,6 +529,7 @@ mod instruction_text_sink {
                 }
             }
 
+            // Safety: `new` requires callers promise there is enough space to hold `s`.
             unsafe {
                 super::append_helpers::append_string_lt_8_unchecked(&mut self.buf, s);
             }
@@ -547,17 +556,24 @@ mod instruction_text_sink {
                 }
             }
 
+            // Safety: we are appending only valid utf8 strings to `self.buf`, as `s` is known to
+            // be valid utf8
             let buf = unsafe { self.buf.as_mut_vec() };
             let new_len = buf.len() + printed_size;
 
+            // Safety: there is no way to exit this function without initializing all bytes up to
+            // `new_len`
             unsafe {
                 buf.set_len(new_len);
             }
+            // Safety: `new()` requires callers promise there is space through to `new_len`
             let mut p = unsafe { buf.as_mut_ptr().offset(new_len as isize) };
 
             loop {
                 let digit = v % 16;
                 let c = u8_to_hex(digit as u8);
+                // Safety: `p` will not move before `buf`'s length at function entry, so `p` points
+                // to a location valid for writing.
                 unsafe {
                     p = p.offset(-1);
                     p.write(c);
@@ -591,17 +607,24 @@ mod instruction_text_sink {
                 }
             }
 
+            // Safety: we are appending only valid utf8 strings to `self.buf`, as `s` is known to
+            // be valid utf8
             let buf = unsafe { self.buf.as_mut_vec() };
             let new_len = buf.len() + printed_size;
 
+            // Safety: there is no way to exit this function without initializing all bytes up to
+            // `new_len`
             unsafe {
                 buf.set_len(new_len);
             }
+            // Safety: `new()` requires callers promise there is space through to `new_len`
             let mut p = unsafe { buf.as_mut_ptr().offset(new_len as isize) };
 
             loop {
                 let digit = v % 16;
                 let c = u8_to_hex(digit as u8);
+                // Safety: `p` will not move before `buf`'s length at function entry, so `p` points
+                // to a location valid for writing.
                 unsafe {
                     p = p.offset(-1);
                     p.write(c);
@@ -635,17 +658,24 @@ mod instruction_text_sink {
                 }
             }
 
+            // Safety: we are appending only valid utf8 strings to `self.buf`, as `s` is known to
+            // be valid utf8
             let buf = unsafe { self.buf.as_mut_vec() };
             let new_len = buf.len() + printed_size;
 
+            // Safety: there is no way to exit this function without initializing all bytes up to
+            // `new_len`
             unsafe {
                 buf.set_len(new_len);
             }
+            // Safety: `new()` requires callers promise there is space through to `new_len`
             let mut p = unsafe { buf.as_mut_ptr().offset(new_len as isize) };
 
             loop {
                 let digit = v % 16;
                 let c = u8_to_hex(digit as u8);
+                // Safety: `p` will not move before `buf`'s length at function entry, so `p` points
+                // to a location valid for writing.
                 unsafe {
                     p = p.offset(-1);
                     p.write(c);
@@ -679,17 +709,24 @@ mod instruction_text_sink {
                 }
             }
 
+            // Safety: we are appending only valid utf8 strings to `self.buf`, as `s` is known to
+            // be valid utf8
             let buf = unsafe { self.buf.as_mut_vec() };
             let new_len = buf.len() + printed_size;
 
+            // Safety: there is no way to exit this function without initializing all bytes up to
+            // `new_len`
             unsafe {
                 buf.set_len(new_len);
             }
+            // Safety: `new()` requires callers promise there is space through to `new_len`
             let mut p = unsafe { buf.as_mut_ptr().offset(new_len as isize) };
 
             loop {
                 let digit = v % 16;
                 let c = u8_to_hex(digit as u8);
+                // Safety: `p` will not move before `buf`'s length at function entry, so `p` points
+                // to a location valid for writing.
                 unsafe {
                     p = p.offset(-1);
                     p.write(c);
@@ -723,17 +760,16 @@ impl DisplaySink for alloc::string::String {
     #[inline(always)]
     fn write_fixed_size(&mut self, s: &str) -> Result<(), core::fmt::Error> {
         self.reserve(s.len());
+        // Safety: we are appending only valid utf8 strings to `self.buf`, as `s` is known to
+        // be valid utf8
         let buf = unsafe { self.as_mut_vec() };
         let new_bytes = s.as_bytes();
 
         if new_bytes.len() == 0 {
-            unsafe { unreachable_kinda_unchecked() }
+            return Ok(());
         }
 
-        if new_bytes.len() >= 16 {
-            unsafe { unreachable_kinda_unchecked() }
-        }
-
+        // Safety: we have reserved space for all `buf` bytes, above.
         unsafe {
             let dest = buf.as_mut_ptr().offset(buf.len() as isize);
 
@@ -748,6 +784,8 @@ impl DisplaySink for alloc::string::String {
                 dest.offset(i as isize).write(new_bytes[i]);
             }
 
+            // Safety: we have initialized all bytes from where `self` initially ended, through to
+            // all `new_bytes` additional elements.
             buf.set_len(buf.len() + new_bytes.len());
         }
 
@@ -756,6 +794,7 @@ impl DisplaySink for alloc::string::String {
     unsafe fn write_lt_32(&mut self, s: &str) -> Result<(), fmt::Error> {
         self.reserve(s.len());
 
+        // Safety: we have reserved enough space for `s`.
         unsafe {
             append_helpers::append_string_lt_32_unchecked(self, s);
         }
@@ -765,6 +804,7 @@ impl DisplaySink for alloc::string::String {
     unsafe fn write_lt_16(&mut self, s: &str) -> Result<(), fmt::Error> {
         self.reserve(s.len());
 
+        // Safety: we have reserved enough space for `s`.
         unsafe {
             append_helpers::append_string_lt_16_unchecked(self, s);
         }
@@ -774,6 +814,7 @@ impl DisplaySink for alloc::string::String {
     unsafe fn write_lt_8(&mut self, s: &str) -> Result<(), fmt::Error> {
         self.reserve(s.len());
 
+        // Safety: we have reserved enough space for `s`.
         unsafe {
             append_helpers::append_string_lt_8_unchecked(self, s);
         }
@@ -796,17 +837,24 @@ impl DisplaySink for alloc::string::String {
 
         self.reserve(printed_size);
 
+        // Safety: we are appending only valid utf8 strings to `self.buf`, as `s` is known to
+        // be valid utf8
         let buf = unsafe { self.as_mut_vec() };
         let new_len = buf.len() + printed_size;
 
+        // Safety: there is no way to exit this function without initializing all bytes up to
+        // `new_len`
         unsafe {
             buf.set_len(new_len);
         }
+        // Safety: we have reserved space through to `new_len` by calling `reserve` above.
         let mut p = unsafe { buf.as_mut_ptr().offset(new_len as isize) };
 
         loop {
             let digit = v % 16;
             let c = u8_to_hex(digit as u8);
+            // Safety: `p` will not move before `buf`'s length at function entry, so `p` points
+            // to a location valid for writing.
             unsafe {
                 p = p.offset(-1);
                 p.write(c);
@@ -835,17 +883,24 @@ impl DisplaySink for alloc::string::String {
 
         self.reserve(printed_size);
 
+        // Safety: we are appending only valid utf8 strings to `self.buf`, as `s` is known to
+        // be valid utf8
         let buf = unsafe { self.as_mut_vec() };
         let new_len = buf.len() + printed_size;
 
+        // Safety: there is no way to exit this function without initializing all bytes up to
+        // `new_len`
         unsafe {
             buf.set_len(new_len);
         }
+        // Safety: we have reserved space through to `new_len` by calling `reserve` above.
         let mut p = unsafe { buf.as_mut_ptr().offset(new_len as isize) };
 
         loop {
             let digit = v % 16;
             let c = u8_to_hex(digit as u8);
+            // Safety: `p` will not move before `buf`'s length at function entry, so `p` points
+            // to a location valid for writing.
             unsafe {
                 p = p.offset(-1);
                 p.write(c);
@@ -874,17 +929,24 @@ impl DisplaySink for alloc::string::String {
 
         self.reserve(printed_size);
 
+        // Safety: we are appending only valid utf8 strings to `self.buf`, as `s` is known to
+        // be valid utf8
         let buf = unsafe { self.as_mut_vec() };
         let new_len = buf.len() + printed_size;
 
+        // Safety: there is no way to exit this function without initializing all bytes up to
+        // `new_len`
         unsafe {
             buf.set_len(new_len);
         }
+        // Safety: we have reserved space through to `new_len` by calling `reserve` above.
         let mut p = unsafe { buf.as_mut_ptr().offset(new_len as isize) };
 
         loop {
             let digit = v % 16;
             let c = u8_to_hex(digit as u8);
+            // Safety: `p` will not move before `buf`'s length at function entry, so `p` points
+            // to a location valid for writing.
             unsafe {
                 p = p.offset(-1);
                 p.write(c);
@@ -913,17 +975,24 @@ impl DisplaySink for alloc::string::String {
 
         self.reserve(printed_size);
 
+        // Safety: we are appending only valid utf8 strings to `self.buf`, as `s` is known to
+        // be valid utf8
         let buf = unsafe { self.as_mut_vec() };
         let new_len = buf.len() + printed_size;
 
+        // Safety: there is no way to exit this function without initializing all bytes up to
+        // `new_len`
         unsafe {
             buf.set_len(new_len);
         }
+        // Safety: we have reserved space through to `new_len` by calling `reserve` above.
         let mut p = unsafe { buf.as_mut_ptr().offset(new_len as isize) };
 
         loop {
             let digit = v % 16;
             let c = u8_to_hex(digit as u8);
+            // Safety: `p` will not move before `buf`'s length at function entry, so `p` points
+            // to a location valid for writing.
             unsafe {
                 p = p.offset(-1);
                 p.write(c);
@@ -946,7 +1015,8 @@ mod append_helpers {
     /// Safety: callers must ensure that `buf.capacity() - buf.len() >= data.len()`.
     #[inline(always)]
     pub unsafe fn append_string_lt_8_unchecked(buf: &mut alloc::string::String, data: &str) {
-        // SAFETY: todo
+        // Safety: we are appending only valid utf8 strings to `self.buf`, as `s` is known to
+        // be valid utf8
         let buf = unsafe { buf.as_mut_vec() };
         let new_bytes = data.as_bytes();
 
@@ -1001,7 +1071,8 @@ mod append_helpers {
     /// Safety: callers must ensure that `buf.capacity() - buf.len() >= data.len()`.
     #[inline(always)]
     pub unsafe fn append_string_lt_16_unchecked(buf: &mut alloc::string::String, data: &str) {
-        // SAFETY: todo
+        // Safety: we are appending only valid utf8 strings to `self.buf`, as `s` is known to
+        // be valid utf8
         let buf = unsafe { buf.as_mut_vec() };
         let new_bytes = data.as_bytes();
 
@@ -1063,7 +1134,8 @@ mod append_helpers {
     /// Safety: callers must ensure that `buf.capacity() - buf.len() >= data.len()`.
     #[inline(always)]
     pub unsafe fn append_string_lt_32_unchecked(buf: &mut alloc::string::String, data: &str) {
-        // SAFETY: todo
+        // Safety: we are appending only valid utf8 strings to `self.buf`, as `s` is known to
+        // be valid utf8
         let buf = unsafe { buf.as_mut_vec() };
         let new_bytes = data.as_bytes();
 
