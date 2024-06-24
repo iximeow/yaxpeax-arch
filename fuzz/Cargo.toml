@@ -1,0 +1,25 @@
+[package]
+name = "yaxpeax-arch-fuzz"
+version = "0.0.0"
+authors = ["Automatically generated"]
+publish = false
+edition = "2018"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.yaxpeax-arch]
+path = ".."
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "write_helpers_are_correct"
+path = "fuzz_targets/write_helpers_are_correct.rs"
+test = false
+doc = false
