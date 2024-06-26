@@ -3,6 +3,9 @@ Build.dependencies({"git", "make", "rustc", "cargo"})
 Step.start("crate")
 Step.push("build")
 Build.run({"cargo", "build"})
+-- and now that some code is conditional on target arch, at least try to build
+-- for other architectures even if we might not be able to run on them.
+Build.run({"cargo", "build", "--no-default-features", "--target", "wasm32-wasi"})
 
 Step.advance("test")
 -- TODO: set `-D warnings` here and below...
