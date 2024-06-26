@@ -1,4 +1,9 @@
-test: test-std test-no-std test-serde-no-std test-colors-no-std test-color-new-no-std test-alloc-no-std
+test: build-smoketest test-std test-no-std test-serde-no-std test-colors-no-std test-color-new-no-std test-alloc-no-std
+
+build-smoketest:
+	cargo build
+	cargo build --no-default-features
+	cargo build --no-default-features --target wasm32-wasi
 
 test-std:
 	cargo test

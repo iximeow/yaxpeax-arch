@@ -1,13 +1,12 @@
 use core::fmt;
 
 // `imp_x86.rs` has `asm!()` macros, and so is not portable at all.
-#[cfg(feature="alloc")]
-#[cfg(target_arch = "x86_64")]
+#[cfg(all(feature="alloc", target_arch = "x86_64"))]
 #[path="./display_sink/imp_x86.rs"]
 mod imp;
 
 // for other architectures, fall back on possibly-slower portable functions.
-#[cfg(not(target_arch = "x86_64"))]
+#[cfg(all(feature="alloc", not(target_arch = "x86_64")))]
 #[path="./display_sink/imp_generic.rs"]
 mod imp;
 
