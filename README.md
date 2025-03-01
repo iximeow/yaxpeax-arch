@@ -55,12 +55,15 @@ there are numerous architectures for which decoders are implemented, at varying 
 | `sh`/`sh2`/`j2`/`sh3`/`sh4` | [yaxpeax-superh](https://git.sr.ht/~nabijaczleweli/yaxpeax-superh) | 🥳 | 🚧 | ❓ | contributed by [наб](https://nabijaczleweli.xyz) |
 | `MOS 6502` | [yaxpeax-6502](https://github.com/cr1901/yaxpeax-6502) | ⚠️ | ❓ | ❓ | contributed by [@cr1901](https://www.twitter.com/cr1901) |
 | `lc87` | [yaxpeax-lc87](https://www.github.com/iximeow/yaxpeax-lc87) | 🥳 | ⚠️ | ❓ | |
+| `rx` | [yaxpeax-rx](https://www.github.com/iximeow/yaxpeax-rx) | 🥳 | ⚠️ | ❓ | |
+| `"avnera"` | [yaxpeax-avnera](https://www.github.com/iximeow/yaxpeax-avnera) | ⚠️ | ⚠️ | ❓ | |undocumented architecture in some Avnera (now Skyworks) Bluetooth modules |
 
 #### feature support
 
 `yaxpeax-arch` defines a few typically-optional features that decoders can also implement, in addition to simple `(bytes) -> instruction` decoding. these are `yaxpeax-arch` traits (or collections thereof) which architectures implement, not crate features.
 
 `description_spans`: implementation of [`AnnotatingDecoder`](https://docs.rs/yaxpeax-arch/latest/yaxpeax_arch/trait.AnnotatingDecoder.html), to decode instructions with bit-level details of what incoming bitstreams mean.
+
 `contextualize`: implementation of [`ShowContextual`](https://docs.rs/yaxpeax-arch/latest/yaxpeax_arch/trait.ShowContextual.html), to display instructions with user-defined information in place of default instruction data. typically expected to show label names instead of relative branch addresses. **i do not recommend implementing this trait**, it needs significant reconsideration.
 
 | architecture | `description_spans` | `contextualize` |
