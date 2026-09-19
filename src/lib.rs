@@ -237,6 +237,11 @@ pub trait Instruction {
     fn well_defined(&self) -> bool;
 }
 
+pub trait InstructionAlias<I: Instruction>: LengthedInstruction {
+    fn compute_alias(t: &I) -> Self;
+    fn dealias(&self) -> I;
+}
+
 #[allow(deprecated)]
 #[deprecated(since="0.3.0", note="ShowContextual ties YaxColors and fmt::Write in a way that only sometimes composes. simultaneously, it is too generic on Ctx, making it difficult to implement and use. it will be revisited in the future.")]
 pub trait ShowContextual<Addr, Ctx: ?Sized, T: fmt::Write, Y: YaxColors> {
