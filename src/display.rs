@@ -16,6 +16,7 @@ pub use display_sink::InstructionTextSink;
 
 mod display_rules;
 pub use display_rules::{ArchDisplayRules};
+pub use display_rules::{DefaultRules, AbsoluteAddressFormatter};
 
 /// translate a byte in range `[0, 15]` to a lowercase base-16 digit.
 ///

@@ -1,3 +1,5 @@
+use crate::address::AddressBase;
+
 /// `ArchDisplayRules` allows client code to control some aspects of instruction formatting. there
 /// are relatively few elements of instruction formatting that generalize across architectures, so
 /// the expected use of this trait is with additional architecture-specific `DisplayRules` traits
@@ -82,5 +84,43 @@ pub trait ArchDisplayRules<A: crate::Arch, S: crate::display::DisplaySink + ?Siz
         let _ = addr;
         let _ = s;
         Ok(false)
+    }
+}
+
+pub struct DefaultRules { _pad: () }
+
+impl<A: crate::Arch, S: crate::display::DisplaySink + ?Sized> ArchDisplayRules<A, S> for DefaultRules {}
+
+impl DefaultRules {
+    pub fn new() -> Self { Self { _pad: () } }
+}
+
+pub struct AbsoluteAddressFormatter<A: crate::Arch> {
+    addr: A::Address,
+}
+
+impl<A: crate::Arch, S: crate::display::DisplaySink + ?Sized> ArchDisplayRules<A, S> for AbsoluteAddressFormatter<A> {
+    fn instr_addr(&self) -> Option<A::Address> {
+        Some(self.addr)
+    }
+
+    fn emit_address(&self, addr: A::Address, s: &mut S) -> Result<bool, core::fmt::Error> {
+        s.span_start_immediate();
+        s.span_end_immediate();
+        s.write_fixed_size("0x")?;
+        s.write_u64(addr.to_linear() as u64)?;
+        s.span_end_immediate();
+        Ok(true)
+    }
+}
+
+impl<A: crate::Arch> AbsoluteAddressFormatter<A> {
+    pub fn new(addr: A::Address) -> Self {
+        Self { addr }
+    }
+
+    pub fn advance(&mut self, instr: &A::Instruction) {
+        use crate::LengthedInstruction;
+        self.addr += instr.len();
     }
 }
