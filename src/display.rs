@@ -14,6 +14,9 @@ pub use display_sink::{DisplaySink, FmtSink};
 #[cfg(feature = "alloc")]
 pub use display_sink::InstructionTextSink;
 
+mod display_rules;
+pub use display_rules::{ArchDisplayRules};
+
 /// translate a byte in range `[0, 15]` to a lowercase base-16 digit.
 ///
 /// if `c` is in range, the output is always valid as the sole byte in a utf-8 string. if `c` is out
