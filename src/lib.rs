@@ -237,6 +237,26 @@ pub trait Instruction {
     fn well_defined(&self) -> bool;
 }
 
+/// glue to associate an `Instruction` type with some form of manual- (or convention-)defined
+/// alias.
+///
+/// this primarily exists to give a standard mechanism to convert between the `Instruction`
+/// provided by an `Arch`'s instruction decoder, and some higher-level representation. the
+/// translation to and from an alias ought to round-trip; implementations can assume
+/// `assert_eq!(FooAlias::compute_alias(i).dealias, i)`.
+///
+/// an alias of an [`Instruction`] is, concretely, a (probably!) distinct struct that has *some*
+/// reversible relationship with an instruction. the alias's `Opcode` equivalent is probably a
+/// collection of "new" variants as well as a variant describing "non-aliasing" that simply
+/// contains the architecture's `Opcode`. operands are less likely to structurally vary, but an
+/// instruction's alias may have *different* operands than its original form. as an example,
+/// `xor r1, r1, r1` may be defined to alias as `mov r1, 0` with both a different number of
+/// operands and some variants having different type.
+///
+/// it is also possible that one architecture has more than one kind of alias. the distinct alias
+/// types could, for example, describe different vendors' aliasing rules, conventional rules in
+/// contrast to manual-defined rules, different aliasing rulse for different versions of a manual,
+/// etc. `InstructionAlias` implementations should describe the documentation which they represent.
 pub trait InstructionAlias<I: Instruction>: LengthedInstruction {
     fn compute_alias(t: &I) -> Self;
     fn dealias(&self) -> I;

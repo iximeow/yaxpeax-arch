@@ -13,6 +13,19 @@ TODO: impls of `fn one` and `fn zero` so downstream users don't have to import n
 TODO: 0.4.0 or later:
   * remove `mod colors`, crossterm dependency, related feature flags
 
+## 0.3.3
+
+* add `trait InstructionAlias`, for architectures to declare a relationship
+  between "baseline" instructions and the "human-friendly" assembly-level
+  aliases that architectures may have.
+* add `trait ArchDisplayRules`, to try generalizing the more flexible
+  instruction formatting support in some decoders. additionally,
+  `AbsoluteAddressFormatter` has a generic implementation of
+  `ArchDisplayRules` to allow decoded instructions to be printed
+  as if at a certain address in a program, rather than the
+  typical yaxpeax behavior of formatting instructions in an
+  address-independent manner.
+
 ## 0.3.2
 
 fix yaxpeax-arch not building for non-x86 targets when alloc is not enabled
