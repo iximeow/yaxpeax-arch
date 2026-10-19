@@ -50,6 +50,7 @@ there are numerous architectures for which decoders are implemented, at varying 
 | `pic17` | [yaxpeax-pic17](https://www.github.com/iximeow/yaxpeax-pic17) | 🚧 | 🚧 | ❓ | |
 | `pic18` | [yaxpeax-pic18](https://www.github.com/iximeow/yaxpeax-pic18) | 🚧 | 🚧 | ❓ | |
 | `pic24` | [yaxpeax-pic24](https://www.github.com/iximeow/yaxpeax-pic24) | ❓ | ❓ | ❓ | exists, but only decodes `NOP` |
+| `POWER`-family | [yaxpeax-power](https://www.github.com/iximeow/yaxpeax-power) | 🥳| 🥳| ❓ |differential tests for Gekko, Cell, Xenon, and much of the POWER family. also supports Amazon, A2. embedded support and v2.07+ is less comprehensive. |
 | `sm83` | [yaxpeax-sm83](https://www.github.com/iximeow/yaxpeax-sm83) | 🥳 | 🚧 | ❓ | |
 | `avr` | [yaxpeax-avr](https://github.com/The6P4C/yaxpeax-avr) | 🥳 | 🚧 | ❓ | contributed by [@the6p4c](https://twitter.com/The6P4C)! |
 | `sh`/`sh2`/`j2`/`sh3`/`sh4` | [yaxpeax-superh](https://git.sr.ht/~nabijaczleweli/yaxpeax-superh) | 🥳 | 🚧 | ❓ | contributed by [наб](https://nabijaczleweli.xyz) |
